@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-// ISSUE ==> NO ID ???
+// OK.
 public class VendorLoader {
     public static void main(String[] args) throws FileNotFoundException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
@@ -24,8 +24,8 @@ public class VendorLoader {
         // Replace the arguments with your own database name and user/password
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
-        if (db.getClass("Vendor") == null) {
-            OClass vendor = db.createVertexClass("Vendor");
+        if (db.getClass("VendorVertex") == null) {
+            OClass vendor = db.createVertexClass("VendorVertex");
             vendor.createProperty("Vendor", OType.STRING);
             vendor.createProperty("Country", OType.STRING);
             vendor.createProperty("Industry", OType.STRING);
@@ -47,7 +47,7 @@ public class VendorLoader {
         // Line 0 only contains the columns names, so we start at line 1
         for(int p=1; p<records.size(); p++){
             // We check if the vendor already exists before adding it
-            String query = "SELECT * from Vendor where Vendor = ?";
+            String query = "SELECT * from VendorVertex where Vendor = ?";
             OResultSet rs = db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
                 createVendor(db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
@@ -59,7 +59,7 @@ public class VendorLoader {
     }
 
     private static OVertex createVendor(ODatabaseSession db, String vendor, String country, String industry) {
-        OVertex result = db.newVertex("Vendor");
+        OVertex result = db.newVertex("VendorVertex");
         result.setProperty("vendor", vendor);
         result.setProperty("country", country);
         result.setProperty("industry", industry);
