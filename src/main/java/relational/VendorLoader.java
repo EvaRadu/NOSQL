@@ -18,14 +18,15 @@ import java.util.List;
 
 // OK.
 public class VendorLoader {
-    public static void main(String[] args) throws FileNotFoundException {
-        OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+    ODatabaseSession db;
+    public VendorLoader(ODatabaseSession db) {
+        this.db = db;
+    }
 
-        if (db.getClass("VendorVertex") == null) {
-            OClass vendor = db.createVertexClass("VendorVertex");
+    public void load(){
+        if (this.db.getClass("VendorVertex") == null) {
+            OClass vendor = this.db.createVertexClass("VendorVertex");
             vendor.createProperty("Vendor", OType.STRING);
             vendor.createProperty("Country", OType.STRING);
             vendor.createProperty("Industry", OType.STRING);
@@ -48,14 +49,12 @@ public class VendorLoader {
         for(int p=1; p<records.size(); p++){
             // We check if the vendor already exists before adding it
             String query = "SELECT * from VendorVertex where Vendor = ?";
-            OResultSet rs = db.query(query, records.get(p).get(0));
+            OResultSet rs = this.db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
-                createVendor(db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
+                createVendor(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
             }
         }
 
-        db.close();
-        orientDB.close();
     }
 
     private static OVertex createVendor(ODatabaseSession db, String vendor, String country, String industry) {

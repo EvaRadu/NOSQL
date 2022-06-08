@@ -6,6 +6,9 @@ import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OVertex;
 import graph.Person;
+import json.JsonLoader;
+import relational.CustomerLoader;
+import relational.VendorLoader;
 
 public class Main {
 
@@ -87,6 +90,21 @@ public class Main {
 
         db.commit();
         */
+
+
+        /* LOADING THE PRODUCT DATA */
+        JsonLoader jsonLoader = new JsonLoader(db);
+        jsonLoader.load();
+
+        /* LOADING THE VENDOR DATA */
+        VendorLoader vendorLoader = new VendorLoader(db);
+        vendorLoader.load();
+
+
+        /* LOADING THE CUSTOMER DATA */
+        CustomerLoader customerLoader = new CustomerLoader(db);
+        customerLoader.load();
+
         db.close();
         orientDB.close();
 

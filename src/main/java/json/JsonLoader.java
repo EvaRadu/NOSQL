@@ -18,13 +18,14 @@ import java.util.Arrays;
 import java.util.List;
 
 public class JsonLoader {
-    public static void main(String[] args) throws FileNotFoundException {
-        OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
+    ODatabaseSession db;
 
-        // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+    public JsonLoader(ODatabaseSession db){
+        this.db = db;
+    }
 
-        if (db.getClass("Product") == null) {
+    public void load(){
+        if (this.db.getClass("Product") == null) {
             OClass product = db.createVertexClass("Product");
             product.createProperty("asin", OType.STRING);
             product.createProperty("title", OType.STRING);
@@ -48,14 +49,11 @@ public class JsonLoader {
         for(int p=1; p<records.size(); p++){
             // We check if the product already exists before adding it
             String query = "SELECT * from Product where asin = ?";
-            OResultSet rs = db.query(query, records.get(p).get(0));
+            OResultSet rs = this.db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
-                createProduct(db, records.get(p).get(0), records.get(p).get(1), Float.parseFloat(records.get(p).get(2)), records.get(p).get(0));
+                createProduct(this.db, records.get(p).get(0), records.get(p).get(1), Float.parseFloat(records.get(p).get(2)), records.get(p).get(0));
             }
         }
-
-        db.close();
-        orientDB.close();
     }
 
     private static OVertex createProduct(ODatabaseSession db, String asin, String title, float price, String imgUrl) {
