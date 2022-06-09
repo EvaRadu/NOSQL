@@ -22,7 +22,7 @@ public class CustomerLoader {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb", "root", "1604");
 
         if (db.getClass("Customer") == null) {
             OClass customer = db.createVertexClass("Customer");

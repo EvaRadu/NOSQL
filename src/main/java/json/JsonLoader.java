@@ -22,7 +22,7 @@ public class JsonLoader {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb", "root", "1604");
 
         if (db.getClass("Product") == null) {
             OClass product = db.createVertexClass("Product");
@@ -50,7 +50,7 @@ public class JsonLoader {
             String query = "SELECT * from Product where asin = ?";
             OResultSet rs = db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
-                createProduct(db, records.get(p).get(0), records.get(p).get(1), Float.parseFloat(records.get(p).get(2)), records.get(p).get(0));
+                OVertex obj = createProduct(db, records.get(p).get(0), records.get(p).get(1), Float.parseFloat(records.get(p).get(2)), records.get(p).get(0));
             }
         }
 
