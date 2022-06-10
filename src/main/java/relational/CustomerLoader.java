@@ -55,8 +55,7 @@ public class CustomerLoader {
 
         // Line 0 only contains the columns names, so we start at line 1
         for(int p=1; p<records.size(); p++){
-            // il n'y a pas d'id ???????
-            // We check if the vendor already exists before adding it
+            // We check if the customer already exists before adding it
             String query = "SELECT * from Customer where id = ?";
 
             OResultSet rs = this.db.query(query, records.get(p).get(0));

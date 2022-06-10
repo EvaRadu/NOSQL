@@ -8,6 +8,7 @@ import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import graph.Person;
 import json.JsonLoader;
+import keyValue.FeedbackLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
 
@@ -95,17 +96,27 @@ public class Main {
 
 
         /* LOADING THE PRODUCT DATA */
+        System.out.println("Loading the product data");
         JsonLoader jsonLoader = new JsonLoader(db);
         jsonLoader.load();
 
         /* LOADING THE CUSTOMER DATA */
+        System.out.println("Loading the customer data");
         CustomerLoader customerLoader = new CustomerLoader(db);
         customerLoader.load();
 
+        /* LOADING THE FEEDBACK DATA */
+        System.out.println("Loading the feedback data");
+        FeedbackLoader feedbackLoader = new FeedbackLoader(db);
+        feedbackLoader.load();
+
 
         /* LOADING THE VENDOR DATA */
+        System.out.println("Loading the vendor data");
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
+
+
 
 
         /*
