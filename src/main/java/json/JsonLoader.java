@@ -22,7 +22,7 @@ public class JsonLoader {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "1604");
+        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         if (db.getClass("Product") == null) {
             OClass product = db.createVertexClass("Product");
