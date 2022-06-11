@@ -6,14 +6,17 @@ import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import graph.GraphLoader;
 import graph.Person;
 import json.JsonLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
 
+import java.text.ParseException;
+
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password
@@ -29,54 +32,7 @@ public class Main {
             product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
         }
 
-        //Partie modèle Graph: pour mettre tous dans un seul main
-        if (db.getClass("Person") == null) {
-            OClass person = db.createVertexClass("Person");
-            person.createProperty("id", OType.INTEGER);
-            person.createProperty("firstName", OType.STRING);
-            person.createProperty("lastName", OType.FLOAT);
-            person.createProperty("gender", OType.STRING);
-            person.createProperty("birthday", OType.DATE);
-            person.createProperty("creationDate", OType.DATE);
-            person.createProperty("locationIP", OType.STRING);
-            person.createProperty("browserUsed", OType.STRING);
-            person.createProperty("place", OType.INTEGER);
-            person.createIndex("Person_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
-        }
-
-        if (db.getClass("Post") == null) {
-            OClass post = db.createVertexClass("Post");
-            post.createProperty("id", OType.INTEGER);
-            post.createProperty("imageFile", OType.BINARY);
-            post.createProperty("creationDate", OType.DATE);
-            post.createProperty("locationIP", OType.STRING);
-            post.createProperty("browserUsed", OType.STRING);
-            post.createProperty("language", OType.STRING);
-            post.createProperty("content", OType.STRING);
-            post.createProperty("length", OType.INTEGER);
-            post.createIndex("Post_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
-        }
-
-        if (db.getClass("Tag") == null) {
-            OClass tag = db.createVertexClass("Tag");
-            tag.createProperty("id", OType.INTEGER);
-            tag.createProperty("name", OType.STRING);
-            tag.createIndex("Tag_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
-        }
-
-        if (db.getClass("Knows") == null) {
-            db.createEdgeClass("Knows");
-        }
-        if (db.getClass("HasTag") == null) {
-            db.createEdgeClass("HasTag");
-        }
-        if (db.getClass("HasInterest") == null) {
-            db.createEdgeClass("HasInterest");
-        }
-        if (db.getClass("HasCreated") == null) {
-            db.createEdgeClass("HasCreated");
-        }
-
+        GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records
 
         OVertex v1 = db.newVertex("Tag");
@@ -93,36 +49,35 @@ public class Main {
         */
 
 
-
-        /* LOADING THE PRODUCT DATA */
+/*
+        // LOADING THE PRODUCT DATA
         JsonLoader jsonLoader = new JsonLoader(db);
         jsonLoader.load();
 
-        /* LOADING THE CUSTOMER DATA */
+        // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         customerLoader.load();
 
 
-        /* LOADING THE VENDOR DATA */
+        // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
 
+*/
+        // exemple de création d'un document, qui sera dans GENERIC CLASS dans la BD
+        // pour voir les données dans une classe, choisi la classe et après fait QUERY ALL
 
         /*
-        ODocument doc = new ODocument("Person2");
+        ODocument doc = new ODocument("Persons");
         doc.field( "name", "Luke" );
         doc.field( "surname", "Skywalker" );
         doc.field( "city", "lalala");
 
         // SAVE THE DOCUMENT
         db.save(doc);
-        */
-
-
-
+        db.commit();
 
         db.close();
-        orientDB.close();
-
+    */
     }
 }
