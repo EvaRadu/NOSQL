@@ -23,12 +23,14 @@ public class FeedbackLoader {
 
 
     public void load(){
-        if (this.db.getClass("Feedback") == null) {
-            OClass feedback = this.db.createVertexClass("Feedback");
-            feedback.createProperty("productId", OType.STRING);
-            feedback.createProperty("customerId", OType.STRING);
-            feedback.createProperty("opinion", OType.STRING);
-            feedback.createIndex("feedback_index", OClass.INDEX_TYPE.UNIQUE, "productId","customerId");
+        /* FEEDBACK  =  EDGE CUSTOMER / PRODUCT  */
+
+        if (this.db.getClass("edgeProductCustomer") == null) {
+            OClass edgeProductCustomer = this.db.createEdgeClass("edgeProductCustomer");
+            edgeProductCustomer.createProperty("idProduct", OType.STRING);
+            edgeProductCustomer.createProperty("idCustomer", OType.STRING);
+            edgeProductCustomer.createProperty("opinion", OType.STRING);
+            edgeProductCustomer.createIndex("edgeProductCustomer_index", OClass.INDEX_TYPE.NOTUNIQUE, "idProduct","idCustomer");
         }
 
 
@@ -45,21 +47,30 @@ public class FeedbackLoader {
 
         // Line 0 only contains the columns names, so we start at line 1
         for(int p=1; p<records.size(); p++){
-            // We check if the feedback already exists before adding it
-            String query = "SELECT * from Feedback where productId = ? and customerId = ?";
+
+            String query = "SELECT * from Product where asin = ?";
+           // System.out.println(records.get(p).get(0));
             OResultSet rs = this.db.query(query, records.get(p).get(0));
-            if(rs.elementStream().count()==0) {
-                createFeeback(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
+            OVertex product = (OVertex) rs.elementStream().findFirst().get();
+
+            String query2 = "SELECT * from Customer where id = ?";
+          //  System.out.println(records.get(p).get(1));
+            OResultSet rs2 = this.db.query(query2, records.get(p).get(1));
+            OVertex customer = (OVertex) rs2.elementStream().findFirst().get();
+
+
+
+            if ((rs2.elementStream().count() == 0)&&(rs.elementStream().count() == 0) ){
+                createEdgeProductCustomer(this.db, customer,  product,records.get(p).get(2));
             }
+
+
         }
     }
 
-    private static OVertex createFeeback(ODatabaseSession db, String productId, String customerId, String opinion) {
-        OVertex result = db.newVertex("Feedback");
-        result.setProperty("productId", productId);
-        result.setProperty("customerId", customerId);
-        result.setProperty("opinion", opinion);
-        result.save();
-        return result;
+    private static void createEdgeProductCustomer(ODatabaseSession db, OVertex customer,OVertex product, String opinion) {
+        customer.addEdge(product,"edgeProductCustomer").setProperty("opinion",opinion);
+        customer.save();
+        db.commit();
     }
 }

@@ -107,8 +107,8 @@ public class Main {
 
         /* LOADING THE FEEDBACK DATA */
         System.out.println("Loading the feedback data");
-        FeedbackLoader feedbackLoader = new FeedbackLoader(db);
-        feedbackLoader.load();
+        // FeedbackLoader feedbackLoader = new FeedbackLoader(db);
+        // feedbackLoader.load();
 
 
         /* LOADING THE VENDOR DATA */
