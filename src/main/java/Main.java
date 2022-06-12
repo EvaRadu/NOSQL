@@ -21,7 +21,7 @@ public class Main {
 
         // Replace the arguments with your own database name and user/password
         // A remplacer avec le nom de la base de donnée et les identifiants
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb", "root", "Ketchup34..");
 
         if (db.getClass("Product") == null) {
             OClass product = db.createVertexClass("Product");
@@ -31,8 +31,8 @@ public class Main {
             product.createProperty("imgUrl", OType.STRING);
             product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
         }
-
-        GraphLoader.createSocialNetworkGraph(db);
+        FeedbackLoader.chargementFeedback(db);
+       // GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records
 
         OVertex v1 = db.newVertex("Tag");
