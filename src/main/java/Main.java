@@ -32,7 +32,7 @@ public class Main {
             product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
         }
 
-        GraphLoader.createSocialNetworkGraph(db);
+        //GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records
 
         OVertex v1 = db.newVertex("Tag");
@@ -79,5 +79,10 @@ public class Main {
 
         db.close();
     */
+        // 4.4
+        CustomerLoader customerLoader = new CustomerLoader(db);
+        customerLoader.newCustomer(db,"123","Eva","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
+        //customerLoader.updateCustomer(db,"123","Evaaa","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
+        customerLoader.deleteCustomer(db,"123");
     }
 }

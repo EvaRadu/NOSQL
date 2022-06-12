@@ -4,6 +4,7 @@ import com.opencsv.CSVReader;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
+import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OVertex;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 // OK.
 public class CustomerLoader {
@@ -55,8 +57,7 @@ public class CustomerLoader {
 
         // Line 0 only contains the columns names, so we start at line 1
         for(int p=1; p<records.size(); p++){
-            // il n'y a pas d'id ???????
-            // We check if the vendor already exists before adding it
+            // We check if the customer already exists before adding it
             String query = "SELECT * from Customer where id = ?";
 
             OResultSet rs = this.db.query(query, records.get(p).get(0));
@@ -85,4 +86,63 @@ public class CustomerLoader {
         result.save();
         return result;
     }
+
+    /* ------------------------------ */
+    /* -- METHODES DE MISES A JOUR -- */
+    /* ------------------------------ */
+
+    public static void newCustomer(ODatabaseSession db, String id, String firstName, String lastName,
+                                   String gender, String birthday, String creationDate, String locationIP,
+                                   String browserUsed, String place) {
+        String query = "SELECT * from Customer where id = ?";
+        OResultSet rs = db.query(query, id);
+        if(!rs.elementStream().findFirst().isPresent()) {
+            createCustomer(db, id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
+            System.out.println("Customer inserted");
+        }
+        else{
+            System.out.println("id already present among the customer vertices");
+        }
+    }
+
+    public static void deleteCustomer(ODatabaseSession db, String id) {
+        String query = "SELECT * from Customer where id = ?";
+        OResultSet rs = db.query(query, id);
+        Optional customer = rs.elementStream().findFirst();
+        if(customer.isPresent()) {
+            db.delete((OVertex)customer.get());
+            System.out.println("Customer deleted");
+        }
+        else{
+            System.out.println("Customer already not present.");
+        }
+    }
+
+    // Ne marche pas
+    public static void updateCustomer(ODatabaseSession db, String id, String firstName, String lastName,
+                                      String gender, String birthday, String creationDate, String locationIP,
+                                      String browserUsed, String place){
+        String query = "SELECT * from Customer where id = ?";
+        OResultSet rs = db.query(query, id);
+        Optional customer = rs.elementStream().findFirst();
+        if(customer.isPresent()) {
+            OVertex customerVertex =  (OVertex)customer.get();
+            customerVertex.setProperty("id", id);
+            customerVertex.setProperty("firstName", firstName);
+            customerVertex.setProperty("lastName", lastName);
+            customerVertex.setProperty("gender", gender);
+            customerVertex.setProperty("birthday", birthday);
+            customerVertex.setProperty("creationDate", creationDate);
+            customerVertex.setProperty("locationIP", locationIP);
+            customerVertex.setProperty("browserUsed", browserUsed);
+            customerVertex.setProperty("place", place);
+
+            System.out.println("Customer updated");
+        }
+        else{
+            System.out.println("Customer not present.");
+        }
+    }
+
+
 }
