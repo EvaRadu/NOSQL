@@ -2,10 +2,12 @@ package graph;
 
 import com.opencsv.CSVReader;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
+import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OElement;
 import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 
 import java.io.FileReader;
@@ -18,9 +20,10 @@ public class GraphLoader {
 
     public static void createSocialNetworkGraph(ODatabaseSession db) throws ParseException {
 
+        /*
         if (db.getClass("Person") == null) {
             OClass person = db.createVertexClass("Person");
-            person.createProperty("id", OType.LONG);
+            person.createProperty("id", OType.STRING);
             person.createProperty("firstName", OType.STRING);
             person.createProperty("lastName", OType.STRING);
             person.createProperty("gender", OType.STRING);
@@ -31,10 +34,10 @@ public class GraphLoader {
             person.createProperty("place", OType.INTEGER);
             person.createIndex("Person_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
         }
-
+        */
         if (db.getClass("Post") == null) {
             OClass post = db.createVertexClass("Post");
-            post.createProperty("id", OType.LONG);
+            post.createProperty("id", OType.STRING);
             post.createProperty("imageFile", OType.STRING);
             post.createProperty("creationDate", OType.DATE);
             post.createProperty("locationIP", OType.STRING);
@@ -47,44 +50,44 @@ public class GraphLoader {
 
         if (db.getClass("Tag") == null) {
             OClass tag = db.createVertexClass("Tag");
-            tag.createProperty("id", OType.LONG);
+            tag.createProperty("id", OType.STRING);
             tag.createProperty("name", OType.STRING);
             tag.createIndex("Tag_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
         }
 
         if (db.getClass("Knows") == null) {
             OClass knows = db.createEdgeClass("Knows");
-            knows.createProperty("idPerson", OType.INTEGER);
-            knows.createProperty("idPerson2", OType.INTEGER);
+            knows.createProperty("idPerson", OType.STRING);
+            knows.createProperty("idPerson2", OType.STRING);
             knows.createProperty("creationDate", OType.DATE);
             knows.createIndex("knows_index", OClass.INDEX_TYPE.NOTUNIQUE,"idPerson","idPerson2");
         }
 
         if (db.getClass("HasTag") == null) {
             OClass hasTag = db.createEdgeClass("HasTag");
-            hasTag.createProperty("idPost", OType.INTEGER);
-            hasTag.createProperty("idTag", OType.INTEGER);
+            hasTag.createProperty("idPost", OType.STRING);
+            hasTag.createProperty("idTag", OType.STRING);
             hasTag.createIndex("hastag_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost","idTag");
         }
 
         if (db.getClass("HasInterest") == null) {
             OClass hasInterest = db.createEdgeClass("HasInterest");
-            hasInterest.createProperty("idPerson", OType.INTEGER);
-            hasInterest.createProperty("idTag", OType.INTEGER);
+            hasInterest.createProperty("idPerson", OType.STRING);
+            hasInterest.createProperty("idTag", OType.STRING);
             hasInterest.createIndex("hasinterest_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPerson","idTag");
         }
 
         if (db.getClass("HasCreated") == null) {
             OClass hasCreated = db.createEdgeClass("HasCreated");
-            hasCreated.createProperty("idPost", OType.INTEGER);
-            hasCreated.createProperty("idPerson", OType.INTEGER);
+            hasCreated.createProperty("idPost", OType.STRING);
+            hasCreated.createProperty("idPerson", OType.STRING);
             hasCreated.createIndex("hasicreated_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost","idPerson");
         }
         loadSocialNetworkData(db);
     }
 
     public static void loadSocialNetworkData(ODatabaseSession db) throws ParseException {
-        List<List<String>> records = new ArrayList<List<String>>();
+        List<List<String>> records = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Customer/person_0_0.csv"));) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -94,7 +97,7 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        List<List<String>> records2 = new ArrayList<List<String>>();
+        List<List<String>> records2 = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/post_0_0.csv"));) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -104,7 +107,7 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        List<List<String>> records3 = new ArrayList<List<String>>();
+        List<List<String>> records3 = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/tag.csv"));) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -114,7 +117,7 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        List<List<String>> records4 = new ArrayList<List<String>>();
+        List<List<String>> records4 = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/person_knows_person_0_0.csv"));) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -124,7 +127,7 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        List<List<String>> records5 = new ArrayList<List<String>>();
+        List<List<String>> records5 = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/post_hasTag_tag_0_0.csv"));) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -134,7 +137,7 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        List<List<String>> records6 = new ArrayList<List<String>>();
+        List<List<String>> records6 = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/person_hasInterest_tag_0_0.csv"))) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -144,7 +147,7 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        List<List<String>> records7 = new ArrayList<List<String>>();
+        List<List<String>> records7 = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/post_hasCreator_person_0_0.csv"))) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
@@ -154,12 +157,11 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        //loadPerson(records, db);
         //loadPost(records2, db);
-        //loadTag(records3, db);
+        loadTag(records3, db);
         //loadKnows(records4, db);
-        //loadHasTag(records5, db);
-        //loadHasInterest(records6, db);
+        loadHasTag(records5, db);
+        loadHasInterest(records6, db);
         loadHasCreated(records7, db);
     }
 
@@ -173,7 +175,7 @@ public class GraphLoader {
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
 
-            Long id = Long.valueOf(lineArray.get(0));
+            String id = lineArray.get(0);
             String firstName = lineArray.get(1);
             String lastName = lineArray.get(2);
             String gender = lineArray.get(3);
@@ -198,7 +200,7 @@ public class GraphLoader {
             }
         }
 
-    private static void createPerson(ODatabaseSession db, Long id, String firstname, String lastname,
+    private static void createPerson(ODatabaseSession db, String id, String firstname, String lastname,
                                          String gender, Date birthday, Date creationDate,
                                          String locationIP, String browserUsed, String place) {
         OVertex person = db.newVertex("Person");
@@ -224,7 +226,7 @@ public class GraphLoader {
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
 
-            Long id = Long.valueOf(lineArray.get(0));
+            String id = lineArray.get(0);
             String imageFile = lineArray.get(1);
             String creationDateString = lineArray.get(2);
             creationDateString = creationDateString.replace("T", " ");
@@ -245,7 +247,7 @@ public class GraphLoader {
         }
     }
 
-    private static void createPost(ODatabaseSession db, Long id, String imageFile, Date creationDate,
+    private static void createPost(ODatabaseSession db, String id, String imageFile, Date creationDate,
                                    String locationIP, String browserUsed,
                                    String language, String content, String length) {
         OVertex post = db.newVertex("Post");
@@ -269,7 +271,7 @@ public class GraphLoader {
             line[line.length -1] =  line[line.length -1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
-            Long id = Long.valueOf(lineArray.get(0));
+            String id = lineArray.get(0);
             String name = lineArray.get(1);
 
             String query = "SELECT * from Tag where id = ?";
@@ -279,13 +281,12 @@ public class GraphLoader {
             // Il donne la première fois seulement comme FALSE et après TRUE sur la même record !!!!!!
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                System.out.println(id);
                 createTag(db, id, name);
             }
         }
     }
 
-    private static void createTag(ODatabaseSession db, Long id, String name) {
+    private static void createTag(ODatabaseSession db, String id, String name) {
         OVertex tag = db.newVertex("Tag");
         tag.setProperty("id", id);
         tag.setProperty("name",name);
@@ -300,23 +301,33 @@ public class GraphLoader {
             line[line.length -1] =  line[line.length -1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
-            Long id = Long.valueOf(lineArray.get(0));
-            Long id2 = Long.valueOf(lineArray.get(1));
+            String id = lineArray.get(0);
+            String id2 = lineArray.get(1);
             String creationDateString = lineArray.get(2);
             creationDateString = creationDateString.replace("T", " ");
             Date creationDate =new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
+
+            String query1 = "SELECT * from Customer where id = ?";
+            OResultSet rs1 = db.query(query1, id);
+            Optional<OResult> optionalID = rs1.stream().findFirst();
+            ORID refPerson1 = optionalID.get().getIdentity().get();
+
+            String query2 = "SELECT * from Customer where id = ?";
+            OResultSet rs2 = db.query(query2, id2);
+            Optional<OResult> optionalID2 = rs2.stream().findFirst();
+            ORID refPerson2 = optionalID2.get().getIdentity().get();
 
             String query = "SELECT * from Knows where idPerson = ? and idPerson2 = ? ";
             OResultSet rs = db.query(query, id, id2);
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createKnows(db, id, id2, creationDate);
+                createKnows(db, refPerson1, refPerson2, creationDate);
             }
         }
     }
 
-    private static void createKnows(ODatabaseSession db, Long id, Long id2, Date creationDate) {
+    private static void createKnows(ODatabaseSession db, ORID id, ORID id2, Date creationDate) {
         OElement knows = db.newElement("Knows");
         knows.setProperty("idPerson", id);
         knows.setProperty("idPerson2", id2);
@@ -333,20 +344,31 @@ public class GraphLoader {
             line[line.length -1] =  line[line.length -1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
-            Long idPost = Long.valueOf(lineArray.get(0));
-            Long idTag = Long.valueOf(lineArray.get(1));
+            String idPost = lineArray.get(0);
+            String idTag = lineArray.get(1);
+
+            String query1 = "SELECT * from Post where id = ?";
+            OResultSet rs1 = db.query(query1, idPost);
+            Optional<OResult> optionalID = rs1.stream().findFirst();
+            ORID refPost = optionalID.get().getIdentity().get();
+
+            String query2 = "SELECT * from Tag where id = ?";
+            OResultSet rs2 = db.query(query2, idTag);
+            Optional<OResult> optionalID2 = rs2.stream().findFirst();
+            ORID refTag = optionalID2.get().getIdentity().get();
+
 
             String query = "SELECT * from HasTag where idPost = ? and idTag = ? ";
             OResultSet rs = db.query(query, idPost, idTag);
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createHasTag(db, idPost, idTag);
+                createHasTag(db, refPost, refTag);
             }
         }
     }
 
-    private static void createHasTag(ODatabaseSession db, Long idPost, Long idTag) {
+    private static void createHasTag(ODatabaseSession db, ORID idPost, ORID idTag) {
         OElement hasTag = db.newElement("HasTag");
         hasTag.setProperty("idPost", idPost);
         hasTag.setProperty("idTag", idTag);
@@ -361,20 +383,31 @@ public class GraphLoader {
             line[line.length -1] =  line[line.length -1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
-            Long idPerson = Long.valueOf(lineArray.get(0));
-            Long idTag = Long.valueOf(lineArray.get(1));
+            String idPerson = lineArray.get(0);
+            String idTag = lineArray.get(1);
+
+            String query1 = "SELECT * from Customer where id = ?";
+            OResultSet rs1 = db.query(query1, idPerson);
+            Optional<OResult> optionalID = rs1.stream().findFirst();
+            ORID refPerson = optionalID.get().getIdentity().get();
+
+            String query2 = "SELECT * from Tag where id = ?";
+            OResultSet rs2 = db.query(query2, idTag);
+            Optional<OResult> optionalID2 = rs2.stream().findFirst();
+            ORID refTag = optionalID2.get().getIdentity().get();
+
 
             String query = "SELECT * from HasInterest where idPerson = ? and idTag = ? ";
             OResultSet rs = db.query(query, idPerson, idTag);
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createHasInterest(db, idPerson, idTag);
+                createHasInterest(db, refPerson, refTag);
             }
         }
     }
 
-    private static void createHasInterest(ODatabaseSession db, Long idPerson, Long idTag) {
+    private static void createHasInterest(ODatabaseSession db, ORID idPerson, ORID idTag) {
         OElement hasInterest = db.newElement("HasInterest");
         hasInterest.setProperty("idPerson", idPerson);
         hasInterest.setProperty("idTag", idTag);
@@ -389,20 +422,31 @@ public class GraphLoader {
             line[line.length -1] =  line[line.length -1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
-            Long idPost = Long.valueOf(lineArray.get(0));
-            Long idPerson = Long.valueOf(lineArray.get(1));
+            String idPost = lineArray.get(0);
+            String idPerson = lineArray.get(1);
+
+            String query1 = "SELECT * from Customer where id = ?";
+            OResultSet rs1 = db.query(query1, idPerson);
+            Optional<OResult> optionalID = rs1.stream().findFirst();
+            ORID refPerson = optionalID.get().getIdentity().get();
+
+            String query2 = "SELECT * from Post where id = ?";
+            OResultSet rs2 = db.query(query2, idPost);
+            Optional<OResult> optionalID2 = rs2.stream().findFirst();
+            ORID refPost = optionalID2.get().getIdentity().get();
+
 
             String query = "SELECT * from HasCreated where idPost = ? and idPerson = ? ";
             OResultSet rs = db.query(query, idPost, idPerson);
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createHasCreated(db, idPost, idPerson);
+                createHasCreated(db, refPost, refPerson);
             }
         }
     }
 
-    private static void createHasCreated(ODatabaseSession db, Long idPost, Long idPerson) {
+    private static void createHasCreated(ODatabaseSession db, ORID idPost, ORID idPerson) {
         OElement hasCreated = db.newElement("HasCreated");
         hasCreated.setProperty("idPost", idPost);
         hasCreated.setProperty("idPerson", idPerson);
