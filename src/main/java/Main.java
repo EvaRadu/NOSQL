@@ -29,17 +29,16 @@ public class Main {
         // A remplacer avec le nom de la base de donnée et les identifiants
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
-        if (db.getClass("Product") == null) {
-            OClass product = db.createVertexClass("Product");
-            product.createProperty("asin", OType.STRING);
-            product.createProperty("title", OType.STRING);
-            product.createProperty("price", OType.FLOAT);
-            product.createProperty("imgUrl", OType.STRING);
-            product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
-        }
+        // LOADING THE PRODUCT DATA
+        JsonLoader jsonLoader = new JsonLoader(db);
+        jsonLoader.load();
+
+
+
+
         //FeedbackLoader.chargementFeedback(db);
 
-        GraphLoader.createSocialNetworkGraph(db);
+        //GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records
 
         OVertex v1 = db.newVertex("Tag");
