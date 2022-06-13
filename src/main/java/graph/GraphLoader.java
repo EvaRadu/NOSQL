@@ -6,6 +6,7 @@ import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OElement;
+import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
@@ -37,7 +38,7 @@ public class GraphLoader {
         */
         if (db.getClass("Post") == null) {
             OClass post = db.createVertexClass("Post");
-            post.createProperty("id", OType.STRING);
+            post.createProperty("idPost", OType.STRING);
             post.createProperty("imageFile", OType.STRING);
             post.createProperty("creationDate", OType.DATE);
             post.createProperty("locationIP", OType.STRING);
@@ -45,14 +46,14 @@ public class GraphLoader {
             post.createProperty("language", OType.STRING);
             post.createProperty("content", OType.STRING);
             post.createProperty("length", OType.INTEGER);
-            post.createIndex("Post_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
+            post.createIndex("Post_id_index", OClass.INDEX_TYPE.UNIQUE, "idPost");
         }
 
         if (db.getClass("Tag") == null) {
             OClass tag = db.createVertexClass("Tag");
-            tag.createProperty("id", OType.STRING);
+            tag.createProperty("idTag", OType.STRING);
             tag.createProperty("name", OType.STRING);
-            tag.createIndex("Tag_id_index", OClass.INDEX_TYPE.UNIQUE, "id");
+            tag.createIndex("Tag_id_index", OClass.INDEX_TYPE.UNIQUE, "idTag");
         }
 
         if (db.getClass("Knows") == null) {
@@ -158,11 +159,11 @@ public class GraphLoader {
         }
 
         //loadPost(records2, db);
-        loadTag(records3, db);
+        //loadTag(records3, db);
         //loadKnows(records4, db);
-        loadHasTag(records5, db);
-        loadHasInterest(records6, db);
-        loadHasCreated(records7, db);
+        //loadHasTag(records5, db);
+        //loadHasInterest(records6, db);
+        //loadHasCreated(records7, db);
     }
 
     private static void loadPerson(List<List<String>> records, ODatabaseSession db) throws ParseException {
@@ -237,7 +238,7 @@ public class GraphLoader {
             String content = lineArray.get(6);
             String length = lineArray.get(7);
 
-            String query = "SELECT * from Post where id = ?";
+            String query = "SELECT * from Post where idPost = ?";
             OResultSet rs = db.query(query, id);
 
             boolean createOrnot = rs.elementStream().count() == 0;
@@ -251,7 +252,7 @@ public class GraphLoader {
                                    String locationIP, String browserUsed,
                                    String language, String content, String length) {
         OVertex post = db.newVertex("Post");
-        post.setProperty("id", id);
+        post.setProperty("idPost", id);
         post.setProperty("imageFile",imageFile);
         post.setProperty("creationDate", creationDate);
         post.setProperty("locationIP", locationIP);
@@ -274,7 +275,7 @@ public class GraphLoader {
             String id = lineArray.get(0);
             String name = lineArray.get(1);
 
-            String query = "SELECT * from Tag where id = ?";
+            String query = "SELECT * from Tag where idTag = ?";
             OResultSet rs = db.query(query, id);
 
             // Quand on appel rs.elementStream().count()rs.elementStream().count()
@@ -288,7 +289,7 @@ public class GraphLoader {
 
     private static void createTag(ODatabaseSession db, String id, String name) {
         OVertex tag = db.newVertex("Tag");
-        tag.setProperty("id", id);
+        tag.setProperty("idTag", id);
         tag.setProperty("name",name);
         tag.save();
     }
@@ -309,13 +310,13 @@ public class GraphLoader {
 
             String query1 = "SELECT * from Customer where id = ?";
             OResultSet rs1 = db.query(query1, id);
-            Optional<OResult> optionalID = rs1.stream().findFirst();
-            ORID refPerson1 = optionalID.get().getIdentity().get();
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPerson1 = optionalID.get();
 
             String query2 = "SELECT * from Customer where id = ?";
             OResultSet rs2 = db.query(query2, id2);
-            Optional<OResult> optionalID2 = rs2.stream().findFirst();
-            ORID refPerson2 = optionalID2.get().getIdentity().get();
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refPerson2 = optionalID2.get();
 
             String query = "SELECT * from Knows where idPerson = ? and idPerson2 = ? ";
             OResultSet rs = db.query(query, id, id2);
@@ -327,10 +328,10 @@ public class GraphLoader {
         }
     }
 
-    private static void createKnows(ODatabaseSession db, ORID id, ORID id2, Date creationDate) {
-        OElement knows = db.newElement("Knows");
-        knows.setProperty("idPerson", id);
-        knows.setProperty("idPerson2", id2);
+    private static void createKnows(ODatabaseSession db, OVertex id, OVertex id2, Date creationDate) {
+        OElement knows = db.newEdge(id,id2,"Knows");
+        knows.setProperty("idPerson", id.getProperty("id"));
+        knows.setProperty("idPerson2", id2.getProperty("id"));
         knows.setProperty("creationDate", creationDate);
         knows.save();
     }
@@ -347,16 +348,15 @@ public class GraphLoader {
             String idPost = lineArray.get(0);
             String idTag = lineArray.get(1);
 
-            String query1 = "SELECT * from Post where id = ?";
+            String query1 = "SELECT * from Post where idPost = ?";
             OResultSet rs1 = db.query(query1, idPost);
-            Optional<OResult> optionalID = rs1.stream().findFirst();
-            ORID refPost = optionalID.get().getIdentity().get();
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPost = optionalID.get();
 
-            String query2 = "SELECT * from Tag where id = ?";
+            String query2 = "SELECT * from Tag where idTag = ?";
             OResultSet rs2 = db.query(query2, idTag);
-            Optional<OResult> optionalID2 = rs2.stream().findFirst();
-            ORID refTag = optionalID2.get().getIdentity().get();
-
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refTag = optionalID2.get();
 
             String query = "SELECT * from HasTag where idPost = ? and idTag = ? ";
             OResultSet rs = db.query(query, idPost, idTag);
@@ -368,10 +368,10 @@ public class GraphLoader {
         }
     }
 
-    private static void createHasTag(ODatabaseSession db, ORID idPost, ORID idTag) {
-        OElement hasTag = db.newElement("HasTag");
-        hasTag.setProperty("idPost", idPost);
-        hasTag.setProperty("idTag", idTag);
+    private static void createHasTag(ODatabaseSession db, OVertex idPost, OVertex idTag) {
+        OElement hasTag = db.newEdge(idPost, idTag, "HasTag");
+        hasTag.setProperty("idPost", idPost.getProperty("idPost"));
+        hasTag.setProperty("idTag", idTag.getProperty("idTag"));
         hasTag.save();
     }
 
@@ -388,13 +388,13 @@ public class GraphLoader {
 
             String query1 = "SELECT * from Customer where id = ?";
             OResultSet rs1 = db.query(query1, idPerson);
-            Optional<OResult> optionalID = rs1.stream().findFirst();
-            ORID refPerson = optionalID.get().getIdentity().get();
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPerson = optionalID.get();
 
-            String query2 = "SELECT * from Tag where id = ?";
+            String query2 = "SELECT * from Tag where idTag = ?";
             OResultSet rs2 = db.query(query2, idTag);
-            Optional<OResult> optionalID2 = rs2.stream().findFirst();
-            ORID refTag = optionalID2.get().getIdentity().get();
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refTag = optionalID2.get();
 
 
             String query = "SELECT * from HasInterest where idPerson = ? and idTag = ? ";
@@ -407,10 +407,10 @@ public class GraphLoader {
         }
     }
 
-    private static void createHasInterest(ODatabaseSession db, ORID idPerson, ORID idTag) {
-        OElement hasInterest = db.newElement("HasInterest");
-        hasInterest.setProperty("idPerson", idPerson);
-        hasInterest.setProperty("idTag", idTag);
+    private static void createHasInterest(ODatabaseSession db, OVertex idPerson, OVertex idTag) {
+        OElement hasInterest = db.newEdge(idPerson, idTag, "HasInterest");
+        hasInterest.setProperty("idPerson", idPerson.getProperty("id"));
+        hasInterest.setProperty("idTag", idTag.getProperty("idTag"));
         hasInterest.save();
     }
 
@@ -427,14 +427,13 @@ public class GraphLoader {
 
             String query1 = "SELECT * from Customer where id = ?";
             OResultSet rs1 = db.query(query1, idPerson);
-            Optional<OResult> optionalID = rs1.stream().findFirst();
-            ORID refPerson = optionalID.get().getIdentity().get();
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPerson = optionalID.get();
 
-            String query2 = "SELECT * from Post where id = ?";
+            String query2 = "SELECT * from Post where idPost = ?";
             OResultSet rs2 = db.query(query2, idPost);
-            Optional<OResult> optionalID2 = rs2.stream().findFirst();
-            ORID refPost = optionalID2.get().getIdentity().get();
-
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refPost = optionalID2.get();
 
             String query = "SELECT * from HasCreated where idPost = ? and idPerson = ? ";
             OResultSet rs = db.query(query, idPost, idPerson);
@@ -446,10 +445,10 @@ public class GraphLoader {
         }
     }
 
-    private static void createHasCreated(ODatabaseSession db, ORID idPost, ORID idPerson) {
-        OElement hasCreated = db.newElement("HasCreated");
-        hasCreated.setProperty("idPost", idPost);
-        hasCreated.setProperty("idPerson", idPerson);
+    private static void createHasCreated(ODatabaseSession db, OVertex idPost, OVertex idPerson) {
+        OElement hasCreated = db.newEdge(idPost.getRecord(), idPerson.getRecord(), "HasCreated");
+        hasCreated.setProperty("idPost", idPost.getProperty("idPost"));
+        hasCreated.setProperty("idPerson", idPerson.getProperty("id"));
         hasCreated.save();
     }
 }
