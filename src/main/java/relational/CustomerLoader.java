@@ -7,8 +7,12 @@ import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -87,40 +91,74 @@ public class CustomerLoader {
         return result;
     }
 
-    /* ------------------------------ */
-    /* -- METHODES DE MISES A JOUR -- */
-    /* ------------------------------ */
+    /* --------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE -- */
+    /* --------------------------------------- */
 
-    public static void newCustomer(ODatabaseSession db, String id, String firstName, String lastName,
-                                   String gender, String birthday, String creationDate, String locationIP,
-                                   String browserUsed, String place) {
+    public static void insertOneCustomer(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String id = (String) json.get("id");
+        String firstName = (String) json.get("firstName");
+        String lastName = (String) json.get("lastName");
+        String gender = (String) json.get("gender");
+        String birthday = (String) json.get("birthday");
+        String creationDate = (String) json.get("creationDate");
+        String locationIP = (String) json.get("locationIP");
+        String browserUsed = (String) json.get("browserUsed");
+        String place = (String) json.get("place");
+
         String query = "SELECT * from Customer where id = ?";
         OResultSet rs = db.query(query, id);
         if(!rs.elementStream().findFirst().isPresent()) {
             createCustomer(db, id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
-            System.out.println("The customer has been inserted");
+            System.out.println("The customer " + firstName + " has been inserted");
         }
         else{
-            System.out.println("The id is already present among the customer vertices");
+            System.out.println("The id " + id + " is already present among the customer vertices");
         }
     }
 
-    public static void deleteCustomer(ODatabaseSession db, String id) {
+    public static void deleteOneCustomer(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String id = (String) json.get("id");
+        String firstName = (String) json.get("firstName");
+
         String query = "SELECT * from Customer where id = ?";
         OResultSet rs = db.query(query, id);
         Optional customer = rs.elementStream().findFirst();
         if(customer.isPresent()) {
             db.delete((OVertex)customer.get());
-            System.out.println("The customer has been deleted");
+            System.out.println("The customer " + firstName + " has been deleted");
         }
         else{
-            System.out.println("The customer is already not present.");
+            System.out.println("The customer " + firstName + " is already not present.");
         }
     }
 
-    public static void updateCustomer(ODatabaseSession db, String id, String firstName, String lastName,
-                                      String gender, String birthday, String creationDate, String locationIP,
-                                      String browserUsed, String place){
+    public static void updateOneCustomer(ODatabaseSession db,ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String id = (String) json.get("id");
+        String firstName = (String) json.get("firstName");
+        String lastName = (String) json.get("lastName");
+        String gender = (String) json.get("gender");
+        String birthday = (String) json.get("birthday");
+        String creationDate = (String) json.get("creationDate");
+        String locationIP = (String) json.get("locationIP");
+        String browserUsed = (String) json.get("browserUsed");
+        String place = (String) json.get("place");
+
         String query = "SELECT * from Customer where id = ?";
         OResultSet rs = db.query(query, id);
         Optional customer = rs.elementStream().findFirst();
@@ -129,10 +167,31 @@ public class CustomerLoader {
             db.delete(customerVertex);
             createCustomer(db,id,firstName,lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
 
-            System.out.println("The customer has been updated");
+            System.out.println("The customer " + firstName + " has been updated");
         }
         else{
-            System.out.println("The customer is not present.");
+            System.out.println("The customer " + firstName + " is not present.");
+        }
+    }
+
+    /* ------------------------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE FOR MANY VALUES -- */
+    /* ------------------------------------------------------- */
+    public static void insertManyCustomers(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            insertOneCustomer(db, document);
+        }
+    }
+
+    public static void updateManyCustomers(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            updateOneCustomer(db, document);
+        }
+    }
+
+    public static void deleteManyCustomers(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            deleteOneCustomer(db, document);
         }
     }
 
