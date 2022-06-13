@@ -42,6 +42,11 @@ public class JsonsLoader {
         if (this.db.getClass("IsFromBrand")== null) {
             OClass IsFromBrand = db.createEdgeClass("IsFromBrand");
         }
+        if (this.db.getClass("Orderline")== null) {
+            OClass Orderline = db.createEdgeClass("Orderline");
+            Orderline.createProperty("productId", OType.STRING);
+            Orderline.createIndex("orderline_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
+        }
 
         // Loading the csv product into a list of list of String
         List<List<String>> productRecords = new ArrayList<List<String>>();
@@ -101,9 +106,13 @@ public class JsonsLoader {
             // We check if the order already exists before adding it
             String query = "SELECT * from Order where OrderId = ?";
             OResultSet rs = this.db.query(query, (String)((JSONObject)orderlist.get(o)).get("OrderId"));
-            //createOrder(this.db, (String)((JSONObject)orderlist.get(o)).get("OrderId"), (String)((JSONObject)orderlist.get(o)).get("PersonId"), (String)((JSONObject)orderlist.get(o)).get("OderDate"), 55);
             if(rs.elementStream().count()==0) {
-                createOrder(this.db, (String)((JSONObject)orderlist.get(o)).get("OrderId"), (String)((JSONObject)orderlist.get(o)).get("PersonId"), (String)((JSONObject)orderlist.get(o)).get("OderDate"), (Double)((JSONObject)orderlist.get(o)).get("TotalPrice"));
+                OVertex order = createOrder(this.db, (String)((JSONObject)orderlist.get(o)).get("OrderId"), (String)((JSONObject)orderlist.get(o)).get("PersonId"), (String)((JSONObject)orderlist.get(o)).get("OrderDate"), (Double)((JSONObject)orderlist.get(o)).get("TotalPrice"));
+                // We add the orderlines for this order
+                JSONArray orderlines = (JSONArray)((JSONObject)orderlist.get(o)).get("Orderline");
+                for(int l=0;l<orderlines.size();l++){
+                    linkOrderToProduct(this.db, order, (String)((JSONObject)orderlines.get(l)).get("asin"), (String)((JSONObject)orderlines.get(l)).get("productId"));
+                }
             }
             rs.close();
         }
@@ -153,26 +162,38 @@ public class JsonsLoader {
         OEdge result = null;
 
         if(rsb.hasNext()){
-            //System.out.println("hasnext");
             Optional<OVertex> optional = rsb.next().getVertex();
             rsb.close();
             if(optional.isPresent()){
-                //System.out.println("ispresent");
                 OVertex Brand = optional.get();
 
                 query = "SELECT * from Product where asin = ?";
                 OResultSet rsp = db.query(query, asin);
                 if(rsp.hasNext()){
-                    //System.out.println("hasnext2");
                     optional = rsp.next().getVertex();
                     rsp.close();
                     if(optional.isPresent()){
-                        //System.out.println("ispresent2");
                         OVertex Product = optional.get();
                         result = db.newEdge(Product, Brand, db.getClass("IsFromBrand"));
                         result.save();
                     }
                 }
+            }
+        }
+        return result;
+    }
+
+    private static OEdge linkOrderToProduct(ODatabaseSession db, OVertex order, String asin, String productId){
+        String query = "SELECT * from Product where asin = ?";
+        OResultSet rsp = db.query(query, asin);
+        OEdge result = null;
+        if(rsp.hasNext()){
+            Optional<OVertex> optional = rsp.next().getVertex();
+            rsp.close();
+            if(optional.isPresent()){
+                OVertex product = optional.get();
+                result = db.newEdge(order, product, db.getClass("Orderline"));
+                result.save();
             }
         }
         return result;
