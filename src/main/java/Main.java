@@ -17,11 +17,14 @@ public class Main {
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         // LOADING THE PRODUCT DATA
+        /*
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
         JsonsLoader jsonLoader = new JsonsLoader(db);
         jsonLoader.load();
         jsonLoader.createOutEdges();
+
+*/
 
 
 
@@ -76,10 +79,22 @@ public class Main {
 
         db.close();
     */
-        // 4.4
+
+
+
+        // TESTS DE MISES A JOUR POUR LES CUSTOMERS (4.4)
         CustomerLoader customerLoader = new CustomerLoader(db);
-        customerLoader.newCustomer(db,"123","Eva","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
-        customerLoader.updateCustomer(db,"123","Evaaa","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
-        //customerLoader.deleteCustomer(db,"123");
+        customerLoader.newCustomer(db,"123","Eva","Radu","female","2001-02-26","2022-06-13T02:10:23.099+0000","27.98.237.197","Opera","2037");
+        customerLoader.updateCustomer(db,"123","Evaaa","Radu","female","2001-02-26","2022-06-13T02:10:23.099+0000","27.98.237.197","Opera","2037");
+        customerLoader.deleteCustomer(db,"123");
+
+
+        // TESTS DE MISES A JOUR POUR LES VENDEURS (4.4)
+        VendorLoader vendorLoader = new VendorLoader(db);
+        vendorLoader.newVendor(db,"EvaShop","Romania","Clothes");
+        vendorLoader.updateVendor(db,"EvaShop","Romania","Sports");
+        vendorLoader.deleteVendor(db,"EvaShop");
+
+
     }
 }

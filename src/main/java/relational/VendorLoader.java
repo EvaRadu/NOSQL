@@ -119,4 +119,50 @@ public class VendorLoader {
         db.commit();
     }
 
+
+    /* ------------------------------ */
+    /* -- METHODES DE MISES A JOUR -- */
+    /* ------------------------------ */
+
+    public static void newVendor(ODatabaseSession db, String vendor, String country, String industry) {
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        if(!rs.elementStream().findFirst().isPresent()) {
+            createVendor(db, vendor, country, industry);
+            System.out.println("The vendor has been inserted");
+        }
+        else{
+            System.out.println("The vendor is already present among the vendor vertices");
+        }
+    }
+
+    public static void deleteVendor(ODatabaseSession db, String vendor) {
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        Optional vendorRes = rs.elementStream().findFirst();
+        if(vendorRes.isPresent()) {
+            db.delete((OVertex)vendorRes.get());
+            System.out.println("The vendor has been deleted");
+        }
+        else{
+            System.out.println("The vendor is already not present.");
+        }
+    }
+
+    public static void updateVendor(ODatabaseSession db, String vendor, String country, String industry){
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        Optional vendorRes = rs.elementStream().findFirst();
+        if(vendorRes.isPresent()) {
+            OVertex customerVertex =  (OVertex)vendorRes.get();
+            db.delete(customerVertex);
+            createVendor(db, vendor, country, industry);
+
+            System.out.println("The vendor has been updated");
+        }
+        else{
+            System.out.println("The vendor is not present.");
+        }
+    }
+
 }

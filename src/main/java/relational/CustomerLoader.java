@@ -98,10 +98,10 @@ public class CustomerLoader {
         OResultSet rs = db.query(query, id);
         if(!rs.elementStream().findFirst().isPresent()) {
             createCustomer(db, id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
-            System.out.println("Customer inserted");
+            System.out.println("The customer has been inserted");
         }
         else{
-            System.out.println("id already present among the customer vertices");
+            System.out.println("The id is already present among the customer vertices");
         }
     }
 
@@ -111,14 +111,13 @@ public class CustomerLoader {
         Optional customer = rs.elementStream().findFirst();
         if(customer.isPresent()) {
             db.delete((OVertex)customer.get());
-            System.out.println("Customer deleted");
+            System.out.println("The customer has been deleted");
         }
         else{
-            System.out.println("Customer already not present.");
+            System.out.println("The customer is already not present.");
         }
     }
 
-    // Ne marche pas
     public static void updateCustomer(ODatabaseSession db, String id, String firstName, String lastName,
                                       String gender, String birthday, String creationDate, String locationIP,
                                       String browserUsed, String place){
@@ -130,10 +129,10 @@ public class CustomerLoader {
             db.delete(customerVertex);
             createCustomer(db,id,firstName,lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
 
-            System.out.println("Customer updated");
+            System.out.println("The customer has been updated");
         }
         else{
-            System.out.println("Customer not present.");
+            System.out.println("The customer is not present.");
         }
     }
 
