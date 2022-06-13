@@ -127,15 +127,8 @@ public class CustomerLoader {
         Optional customer = rs.elementStream().findFirst();
         if(customer.isPresent()) {
             OVertex customerVertex =  (OVertex)customer.get();
-            customerVertex.setProperty("id", id);
-            customerVertex.setProperty("firstName", firstName);
-            customerVertex.setProperty("lastName", lastName);
-            customerVertex.setProperty("gender", gender);
-            customerVertex.setProperty("birthday", birthday);
-            customerVertex.setProperty("creationDate", creationDate);
-            customerVertex.setProperty("locationIP", locationIP);
-            customerVertex.setProperty("browserUsed", browserUsed);
-            customerVertex.setProperty("place", place);
+            db.delete(customerVertex);
+            createCustomer(db,id,firstName,lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
 
             System.out.println("Customer updated");
         }

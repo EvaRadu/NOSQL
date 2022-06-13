@@ -82,7 +82,7 @@ public class Main {
         // 4.4
         CustomerLoader customerLoader = new CustomerLoader(db);
         customerLoader.newCustomer(db,"123","Eva","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
-        //customerLoader.updateCustomer(db,"123","Evaaa","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
-        customerLoader.deleteCustomer(db,"123");
+        customerLoader.updateCustomer(db,"123","Evaaa","Radu","female","26/02/2001","12/06/2022","111.111.111","Opera","Nice");
+        //customerLoader.deleteCustomer(db,"123");
     }
 }
