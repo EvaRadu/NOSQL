@@ -2,6 +2,7 @@ import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
 import json.JsonsLoader;
+import relational.CustomerLoader;
 import relational.VendorLoader;
 
 import java.text.ParseException;
