@@ -1,24 +1,10 @@
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
-import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
-import com.orientechnologies.orient.core.id.ORID;
-import com.orientechnologies.orient.core.metadata.schema.OClass;
-import com.orientechnologies.orient.core.metadata.schema.OType;
-import com.orientechnologies.orient.core.record.ORecord;
-import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.record.impl.ODocument;
-import com.orientechnologies.orient.core.sql.executor.OResult;
-import com.orientechnologies.orient.core.sql.executor.OResultSet;
-import feedback.FeedbackLoader;
-import graph.GraphLoader;
-import graph.Person;
-import json.JsonLoader;
-import relational.CustomerLoader;
+import json.JsonsLoader;
 import relational.VendorLoader;
 
 import java.text.ParseException;
-import java.util.Optional;
 
 public class Main {
 
@@ -30,8 +16,12 @@ public class Main {
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         // LOADING THE PRODUCT DATA
-        JsonLoader jsonLoader = new JsonLoader(db);
+        VendorLoader vendorLoader = new VendorLoader(db);
+        vendorLoader.load();
+        JsonsLoader jsonLoader = new JsonsLoader(db);
         jsonLoader.load();
+        jsonLoader.createOutEdges();
+
 
 
 

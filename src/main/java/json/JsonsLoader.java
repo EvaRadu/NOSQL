@@ -2,26 +2,20 @@ package json;
 
 import com.opencsv.CSVReader;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
-import com.orientechnologies.orient.core.db.OrientDB;
-import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OEdge;
-import com.orientechnologies.orient.core.record.OElement;
 import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-public class JsonLoader {
+public class JsonsLoader {
     ODatabaseSession db;
 
-    public JsonLoader(ODatabaseSession db){
+    public JsonsLoader(ODatabaseSession db){
         this.db = db;
     }
 
@@ -34,14 +28,26 @@ public class JsonLoader {
             product.createProperty("imgUrl", OType.STRING);
             product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
         }
+        /*
         if (this.db.getClass("Brand") == null) {
             OClass Brand = db.createVertexClass("Brand");
             Brand.createProperty("bname", OType.STRING);
             Brand.createIndex("brand_name_index", OClass.INDEX_TYPE.UNIQUE, "bname");
         }
+
+        if (this.db.getClass("Order") == null) {
+            OClass product = db.createVertexClass("Order");
+            product.createProperty("OrderId", OType.STRING);
+            product.createProperty("PersonId", OType.STRING);
+            product.createProperty("OrderDate", OType.DATE);
+            product.createProperty("TotalPrice", OType.FLOAT);
+            product.createIndex("order_id_index", OClass.INDEX_TYPE.UNIQUE, "OrderId");
+        }
+        */
         if (this.db.getClass("IsFromBrand")== null) {
             OClass IsFromBrand = db.createEdgeClass("IsFromBrand");
         }
+
 
 
         // Loading the csv product into a list of list of String
@@ -66,6 +72,7 @@ public class JsonLoader {
             rs.close();
         }
 
+        /*
         // Loading the csv BrandByProduct into a list of list of String
         List<List<String>> brandRecords = new ArrayList<List<String>>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
@@ -93,7 +100,25 @@ public class JsonLoader {
         for(int p=0; p<brandRecords.size(); p++){
             linkProductToBrand(this.db, brandRecords.get(p).get(0), brandRecords.get(p).get(1));
         }
+        */
 
+    }
+
+    public void createOutEdges(){
+        // Loading the csv BrandByProduct into a list of list of String
+        List<List<String>> brandRecords = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                brandRecords.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        for(int p=0; p<brandRecords.size(); p++){
+            linkProductToBrand(this.db, brandRecords.get(p).get(0), brandRecords.get(p).get(1));
+        }
     }
 
     private static OVertex createProduct(ODatabaseSession db, String asin, String title, float price, String imgUrl) {
@@ -114,7 +139,7 @@ public class JsonLoader {
     }
 
     private static OEdge linkProductToBrand(ODatabaseSession db, String bname, String asin){
-        String query = "SELECT * from Brand where bname = ?";
+        String query = "SELECT * from VendorVertex where Vendor = ?";
         OResultSet rsb = db.query(query, bname);
         OEdge result = null;
 
