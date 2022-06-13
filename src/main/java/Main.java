@@ -1,15 +1,7 @@
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
-import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
-import com.orientechnologies.orient.core.metadata.schema.OClass;
-import com.orientechnologies.orient.core.metadata.schema.OType;
-import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.record.impl.ODocument;
-import graph.GraphLoader;
-import graph.Person;
-import json.JsonLoader;
-import relational.CustomerLoader;
+import json.JsonsLoader;
 import relational.VendorLoader;
 
 import java.text.ParseException;
@@ -23,14 +15,18 @@ public class Main {
         // A remplacer avec le nom de la base de donnée et les identifiants
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
-        if (db.getClass("Product") == null) {
-            OClass product = db.createVertexClass("Product");
-            product.createProperty("asin", OType.STRING);
-            product.createProperty("title", OType.STRING);
-            product.createProperty("price", OType.FLOAT);
-            product.createProperty("imgUrl", OType.STRING);
-            product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
-        }
+        // LOADING THE PRODUCT DATA
+        VendorLoader vendorLoader = new VendorLoader(db);
+        vendorLoader.load();
+        JsonsLoader jsonLoader = new JsonsLoader(db);
+        jsonLoader.load();
+        jsonLoader.createOutEdges();
+
+
+
+
+
+        //FeedbackLoader.chargementFeedback(db);
 
         //GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records

@@ -38,7 +38,7 @@ public class VendorLoader {
         }
 
 
-        // Loading the csv product into a list of list of String
+        // Loading the csv vendor into a list of list of String
         List<List<String>> records = new ArrayList<List<String>>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Vendor/Vendor.csv"));) {
             String[] values = null;
@@ -52,14 +52,15 @@ public class VendorLoader {
         // Line 0 only contains the columns names, so we start at line 1
         for(int p=1; p<records.size(); p++){
             // We check if the vendor already exists before adding it
-            String query = "SELECT * from VendorVertex where vendor = ?";
+            String query = "SELECT * from VendorVertex where Vendor = ?";
             OResultSet rs = this.db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
                 createVendor(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
             }
         }
 
-        /* EDGE VENDOR / PRODUCT  */
+        /*
+        // EDGE VENDOR / PRODUCT
 
         if (this.db.getClass("edgeVendorProduct") == null) {
             OClass edgeVendorProduct = this.db.createEdgeClass("edgeVendorProduct");
@@ -67,6 +68,7 @@ public class VendorLoader {
             edgeVendorProduct.createProperty("idProduct", OType.STRING);
             edgeVendorProduct.createIndex("edgeVendorProduct_index", OClass.INDEX_TYPE.UNIQUE, "idVendor");
         }
+
 
 
         // Loading the csv product into a list of list of String
@@ -85,7 +87,11 @@ public class VendorLoader {
             // We check if the vendor already exists before adding it
             String query = "SELECT * from VendorVertex where vendor = ?";
             OResultSet rs = this.db.query(query, records2.get(p).get(0));
+            if(rs.elementStream().count()==0) {
+
+            }
             OVertex vendor = (OVertex) rs.elementStream().findFirst().get();
+
 
             String query2 = "SELECT * from Product where asin = ?";
             OResultSet rs2 = this.db.query(query2, records2.get(p).get(1));
@@ -96,19 +102,14 @@ public class VendorLoader {
             }
 
 
-        }
-
-
-
-
-
+            */
     }
 
     private static OElement createVendor(ODatabaseSession db, String vendor, String country, String industry) {
         OElement result = db.newVertex("VendorVertex");
-        result.setProperty("vendor", vendor);
-        result.setProperty("country", country);
-        result.setProperty("industry", industry);
+        result.setProperty("Vendor", vendor);
+        result.setProperty("Country", country);
+        result.setProperty("Industry", industry);
         result.save();
         return result;
     }
