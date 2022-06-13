@@ -14,7 +14,7 @@ public class Main {
 
         // Replace the arguments with your own database name and user/password
         // A remplacer avec le nom de la base de donnée et les identifiants
-        ODatabaseSession db = orientDB.open("testdb", "root", "1604");
+        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         if (db.getClass("Product") == null) {
             OClass product = db.createVertexClass("Product");
