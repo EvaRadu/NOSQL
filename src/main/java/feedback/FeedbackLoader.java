@@ -1,13 +1,13 @@
 package feedback;
 
-
 import com.opencsv.CSVReader;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
-import com.orientechnologies.orient.core.id.ORID;
+import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OElement;
-import com.orientechnologies.orient.core.sql.executor.OResult;
+import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 
 import java.io.FileReader;
@@ -22,10 +22,10 @@ public class FeedbackLoader {
     public static void chargementFeedback(ODatabaseSession db){
 
         if (db.getClass("Feedback") == null) {
-            OClass feedback = db.createClass("Feedback");
+            OClass feedback = db.createEdgeClass("Feedback");
             feedback.createProperty("productAsin", OType.STRING);
             feedback.createProperty("personID", OType.STRING);
-            feedback.createProperty("feedback", OType.STRING);
+            feedback.createProperty("comment", OType.STRING);
             feedback.createIndex("feedback_index", OClass.INDEX_TYPE.NOTUNIQUE, "productAsin", "personID");
         }
 
@@ -41,30 +41,30 @@ public class FeedbackLoader {
 
         for(int p=1; p<records.size(); p++){
 
-            String query = "SELECT rid from INDEX:product_asin_index where key = ?";
+            String query = "SELECT * from Product where asin = ?";
             OResultSet productAsinres = db.query(query, records.get(p).get(0));
-            ORID productAsin = productAsinres.stream().findFirst().get().getProperty("rid");
+            Optional<OElement> productOptional = productAsinres.elementStream().findFirst();
+            OElement product = productOptional.get();
 
-            String query2 = "SELECT rid from INDEX:customer_index where key = ?";
+            String query2 = "SELECT * from Customer where id = ?";
             OResultSet customerIDres = db.query(query2, records.get(p).get(1));
-            ORID customerID = customerIDres.stream().findFirst().get().getProperty("rid");
+            Optional<OVertex> customerOptional = customerIDres.vertexStream().findFirst();
+            OVertex customer = customerOptional.get();
 
             String feedbackRecord = records.get(p).get(2);
 
-            String query3 = "SELECT * from Feedback where productAsin = ? and personID = ? ";
-            OResultSet count = db.query(query3, productAsin, customerID);
-
-            if (count.stream().count() == 0){
-                creerFeedback(db, productAsin, customerID, feedbackRecord);
-            }
+            creerFeedback(db, (OVertex) product, customer, feedbackRecord);
         }
     }
 
-    private static void creerFeedback(ODatabaseSession db, ORID productAsin,ORID personID, String feedback) {
-        OElement feedbackClass = db.newElement("Feedback");
-        feedbackClass.setProperty("productAsin", productAsin);
-        feedbackClass.setProperty("personID", personID);
+    private static void creerFeedback(ODatabaseSession db, OVertex product,OVertex person, String feedback) {
+        OEdge feedbackClass = db.newEdge(person, product, "Feedback");
         feedbackClass.setProperty("feedback", feedback);
         feedbackClass.save();
+    }
+
+    public static void supprimerFeedbackParCustomer(ODatabaseDocument db, String firstName){
+        String supprimer = "DELETE EDGE Feedback WHERE out.firstName = ?";
+        OResultSet supprimerRes = db.query(supprimer,firstName);
     }
 }
