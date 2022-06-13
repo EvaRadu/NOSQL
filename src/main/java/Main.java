@@ -4,11 +4,12 @@ import com.orientechnologies.orient.core.db.OrientDBConfig;
 import json.JsonsLoader;
 import relational.VendorLoader;
 
+import java.io.IOException;
 import java.text.ParseException;
 
 public class Main {
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password

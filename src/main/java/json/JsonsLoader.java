@@ -7,9 +7,12 @@ import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class JsonsLoader {
@@ -19,7 +22,7 @@ public class JsonsLoader {
         this.db = db;
     }
 
-    public void load(){
+    public void load() throws IOException, ParseException {
         if (this.db.getClass("Product") == null) {
             OClass product = db.createVertexClass("Product");
             product.createProperty("asin", OType.STRING);
@@ -28,27 +31,17 @@ public class JsonsLoader {
             product.createProperty("imgUrl", OType.STRING);
             product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
         }
-        /*
-        if (this.db.getClass("Brand") == null) {
-            OClass Brand = db.createVertexClass("Brand");
-            Brand.createProperty("bname", OType.STRING);
-            Brand.createIndex("brand_name_index", OClass.INDEX_TYPE.UNIQUE, "bname");
-        }
-
         if (this.db.getClass("Order") == null) {
             OClass product = db.createVertexClass("Order");
             product.createProperty("OrderId", OType.STRING);
             product.createProperty("PersonId", OType.STRING);
-            product.createProperty("OrderDate", OType.DATE);
+            product.createProperty("OrderDate", OType.STRING);
             product.createProperty("TotalPrice", OType.FLOAT);
             product.createIndex("order_id_index", OClass.INDEX_TYPE.UNIQUE, "OrderId");
         }
-        */
         if (this.db.getClass("IsFromBrand")== null) {
             OClass IsFromBrand = db.createEdgeClass("IsFromBrand");
         }
-
-
 
         // Loading the csv product into a list of list of String
         List<List<String>> productRecords = new ArrayList<List<String>>();
@@ -72,35 +65,48 @@ public class JsonsLoader {
             rs.close();
         }
 
-        /*
-        // Loading the csv BrandByProduct into a list of list of String
-        List<List<String>> brandRecords = new ArrayList<List<String>>();
-        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
-            String[] values = null;
-            while ((values = csvReader.readNext()) != null) {
-                brandRecords.add(Arrays.asList(values));
+        // The data in Order.json is malformed, so we need to modify it.
+        // We'll add a '[' at the very beginning, a ',' at the end of each line, and a ']' at the very end.
+        BufferedReader inputStream = null;
+        PrintWriter outputStream = null;
+        try {
+            inputStream = new BufferedReader(new FileReader("DATA/Order/Order.json"));
+            outputStream = new PrintWriter(new FileWriter("DATA/Order/OrderParsed.json"));
+            String l;
+            int cpt = 0;
+            while ((l = inputStream.readLine()) != null) {
+                if(cpt==0){outputStream.println("["+l+",");}
+                else if(cpt==142256){
+                    outputStream.println(l + "]");
+                } else {
+                    outputStream.println(l + ",");
+                }
+                cpt++;
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
+            if (outputStream != null) {
+                outputStream.close();
+            }
         }
 
-        HashSet<String> uniqueBrands = new HashSet<>();
-        for(int b=0; b<brandRecords.size(); b++){
-            uniqueBrands.add(brandRecords.get(b).get(0));
-        }
-        for(String brand : uniqueBrands){
-            String query = "SELECT * from Brand where bname = ?";
-            OResultSet rs = this.db.query(query, brand);
+
+        JSONParser jsonParser = new JSONParser();
+        FileReader reader = new FileReader("DATA/Order/OrderParsed.json");
+        Object obj = jsonParser.parse(reader);
+        JSONArray orderlist = (JSONArray) obj;
+        for(int o=0;o<orderlist.size(); o++){
+            // We check if the order already exists before adding it
+            String query = "SELECT * from Order where OrderId = ?";
+            OResultSet rs = this.db.query(query, (String)((JSONObject)orderlist.get(o)).get("OrderId"));
+            //createOrder(this.db, (String)((JSONObject)orderlist.get(o)).get("OrderId"), (String)((JSONObject)orderlist.get(o)).get("PersonId"), (String)((JSONObject)orderlist.get(o)).get("OderDate"), 55);
             if(rs.elementStream().count()==0) {
-                createBrand(this.db, brand);
+                createOrder(this.db, (String)((JSONObject)orderlist.get(o)).get("OrderId"), (String)((JSONObject)orderlist.get(o)).get("PersonId"), (String)((JSONObject)orderlist.get(o)).get("OderDate"), (Double)((JSONObject)orderlist.get(o)).get("TotalPrice"));
             }
+            rs.close();
         }
-
-        // Creating edges from products to brands
-        for(int p=0; p<brandRecords.size(); p++){
-            linkProductToBrand(this.db, brandRecords.get(p).get(0), brandRecords.get(p).get(1));
-        }
-        */
 
     }
 
@@ -131,9 +137,12 @@ public class JsonsLoader {
         return result;
     }
 
-    private static OVertex createBrand(ODatabaseSession db, String bname) {
-        OVertex result = db.newVertex("Brand");
-        result.setProperty("bname", bname);
+    private static OVertex createOrder(ODatabaseSession db, String OrderId, String PersonId, String OrderDate, Double TotalPrice) {
+        OVertex result = db.newVertex("Order");
+        result.setProperty("OrderId", OrderId);
+        result.setProperty("PersonId", PersonId);
+        result.setProperty("OrderDate", OrderDate);
+        result.setProperty("TotalPrice", TotalPrice.floatValue());
         result.save();
         return result;
     }
