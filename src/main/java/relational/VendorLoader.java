@@ -1,11 +1,14 @@
 package relational;
 
 import com.opencsv.CSVReader;
+import com.orientechnologies.orient.client.remote.OStorageRemotePushThread;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.OEdge;
+import com.orientechnologies.orient.core.record.OElement;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 
@@ -15,17 +18,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 // OK.
 public class VendorLoader {
-    public static void main(String[] args) throws FileNotFoundException {
-        OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+    ODatabaseSession db;
+    public VendorLoader(ODatabaseSession db) {
+        this.db = db;
+    }
 
-        if (db.getClass("VendorVertex") == null) {
-            OClass vendor = db.createVertexClass("VendorVertex");
+    public void load(){
+        if (this.db.getClass("VendorVertex") == null) {
+            OClass vendor = this.db.createVertexClass("VendorVertex");
             vendor.createProperty("Vendor", OType.STRING);
             vendor.createProperty("Country", OType.STRING);
             vendor.createProperty("Industry", OType.STRING);
@@ -47,23 +52,70 @@ public class VendorLoader {
         // Line 0 only contains the columns names, so we start at line 1
         for(int p=1; p<records.size(); p++){
             // We check if the vendor already exists before adding it
-            String query = "SELECT * from VendorVertex where Vendor = ?";
-            OResultSet rs = db.query(query, records.get(p).get(0));
+            String query = "SELECT * from VendorVertex where vendor = ?";
+            OResultSet rs = this.db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
-                createVendor(db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
+                createVendor(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
             }
         }
 
-        db.close();
-        orientDB.close();
+        /* EDGE VENDOR / PRODUCT  */
+
+        if (this.db.getClass("edgeVendorProduct") == null) {
+            OClass edgeVendorProduct = this.db.createEdgeClass("edgeVendorProduct");
+            edgeVendorProduct.createProperty("idVendor", OType.STRING);
+            edgeVendorProduct.createProperty("idProduct", OType.STRING);
+            edgeVendorProduct.createIndex("edgeVendorProduct_index", OClass.INDEX_TYPE.UNIQUE, "idVendor");
+        }
+
+
+        // Loading the csv product into a list of list of String
+        List<List<String>> records2 = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records2.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Line 0 only contains the columns names, so we start at line 1
+        for(int p=1; p<records2.size(); p++){
+            // We check if the vendor already exists before adding it
+            String query = "SELECT * from VendorVertex where vendor = ?";
+            OResultSet rs = this.db.query(query, records2.get(p).get(0));
+            OVertex vendor = (OVertex) rs.elementStream().findFirst().get();
+
+            String query2 = "SELECT * from Product where asin = ?";
+            OResultSet rs2 = this.db.query(query2, records2.get(p).get(1));
+            OVertex product = (OVertex) rs2.elementStream().findFirst().get();
+            //System.out.println(rs2.elementStream().count());
+            if ((rs2.elementStream().count() == 0)&&(rs.elementStream().count() == 0) ){
+                createEdgeVendorProduct(this.db, vendor,  product);
+            }
+
+
+        }
+
+
+
+
+
     }
 
-    private static OVertex createVendor(ODatabaseSession db, String vendor, String country, String industry) {
-        OVertex result = db.newVertex("VendorVertex");
+    private static OElement createVendor(ODatabaseSession db, String vendor, String country, String industry) {
+        OElement result = db.newVertex("VendorVertex");
         result.setProperty("vendor", vendor);
         result.setProperty("country", country);
         result.setProperty("industry", industry);
         result.save();
         return result;
     }
+
+    private static void createEdgeVendorProduct(ODatabaseSession db, OVertex vendor,OVertex product) {
+        vendor.addEdge(product,"edgeVendorProduct").save();
+        db.commit();
+    }
+
 }

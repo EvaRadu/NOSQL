@@ -5,7 +5,11 @@ import com.orientechnologies.orient.core.db.document.ODatabaseDocument;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import graph.Person;
+import json.JsonLoader;
+import relational.CustomerLoader;
+import relational.VendorLoader;
 
 public class Main {
 
@@ -87,6 +91,36 @@ public class Main {
 
         db.commit();
         */
+
+
+
+        /* LOADING THE PRODUCT DATA */
+        JsonLoader jsonLoader = new JsonLoader(db);
+        jsonLoader.load();
+
+        /* LOADING THE CUSTOMER DATA */
+        CustomerLoader customerLoader = new CustomerLoader(db);
+        customerLoader.load();
+
+
+        /* LOADING THE VENDOR DATA */
+        VendorLoader vendorLoader = new VendorLoader(db);
+        vendorLoader.load();
+
+
+        /*
+        ODocument doc = new ODocument("Person2");
+        doc.field( "name", "Luke" );
+        doc.field( "surname", "Skywalker" );
+        doc.field( "city", "lalala");
+
+        // SAVE THE DOCUMENT
+        db.save(doc);
+        */
+
+
+
+
         db.close();
         orientDB.close();
 

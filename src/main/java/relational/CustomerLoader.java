@@ -18,14 +18,17 @@ import java.util.List;
 
 // OK.
 public class CustomerLoader {
-    public static void main(String[] args) throws FileNotFoundException {
-        OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+    ODatabaseSession db;
 
-        if (db.getClass("Customer") == null) {
-            OClass customer = db.createVertexClass("Customer");
+    public CustomerLoader(ODatabaseSession db) {
+        this.db = db;
+    }
+
+
+    public void load(){
+        if (this.db.getClass("Customer") == null) {
+            OClass customer = this.db.createVertexClass("Customer");
             customer.createProperty("id", OType.STRING);
             customer.createProperty("firstName", OType.STRING);
             customer.createProperty("lastName", OType.STRING);
@@ -56,16 +59,13 @@ public class CustomerLoader {
             // We check if the vendor already exists before adding it
             String query = "SELECT * from Customer where id = ?";
 
-            OResultSet rs = db.query(query, records.get(p).get(0));
+            OResultSet rs = this.db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
-                createCustomer(db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2),
+                createCustomer(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2),
                         records.get(p).get(3),records.get(p).get(4),records.get(p).get(5),
-                                records.get(p).get(6),records.get(p).get(7),records.get(p).get(8));
+                        records.get(p).get(6),records.get(p).get(7),records.get(p).get(8));
             }
         }
-
-        db.close();
-        orientDB.close();
     }
 
     private static OVertex createCustomer(ODatabaseSession db, String id, String firstName, String lastName,
