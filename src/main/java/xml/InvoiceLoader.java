@@ -131,14 +131,13 @@ public class InvoiceLoader {
                         format.parse(records.get(p).get(2)),
                         Float.parseFloat(records.get(p).get(3))
                         );
-                linkInvoiceToProduct(this.db, invoice,records.get(p).get(4),records.get(p).get(5));
+                //linkInvoiceToProduct(this.db, invoice,records.get(p).get(4),records.get(p).get(5));
             }
             rs.close();
         }
 
         System.out.println("The invoices have been loaded");
 
-        db.close();
     }
 
     private static OVertex createInvoice(ODatabaseSession db,

@@ -4,6 +4,7 @@ import com.opencsv.CSVReader;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.ODirection;
 import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
@@ -41,11 +42,18 @@ public class JsonsLoader {
         }
         if (this.db.getClass("IsFromBrand")== null) {
             OClass IsFromBrand = db.createEdgeClass("IsFromBrand");
+            IsFromBrand.createProperty("asin", OType.STRING);
+            IsFromBrand.createIndex("IsFromBrand_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
         }
         if (this.db.getClass("Orderline")== null) {
             OClass Orderline = db.createEdgeClass("Orderline");
             Orderline.createProperty("productId", OType.STRING);
             Orderline.createIndex("orderline_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
+        }
+        if (this.db.getClass("HasInvoice")== null) {
+            OClass HasInvoice = db.createEdgeClass("HasInvoice");
+            HasInvoice.createProperty("OrderId", OType.STRING);
+            HasInvoice.createIndex("HasInvoice_OrderId_index", OClass.INDEX_TYPE.UNIQUE, "OrderId");
         }
 
         // Loading the csv product into a list of list of String
@@ -116,6 +124,7 @@ public class JsonsLoader {
             }
             rs.close();
         }
+        System.out.println("The Jsons have been loaded");
 
     }
 
@@ -130,10 +139,70 @@ public class JsonsLoader {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
         for(int p=0; p<brandRecords.size(); p++){
             linkProductToBrand(this.db, brandRecords.get(p).get(0), brandRecords.get(p).get(1));
         }
+
+        // Linking Orders to Invoices
+        /*
+        String query = "SELECT * from Order order by OrderId";
+        OResultSet rso = this.db.query(query);
+        String queryi = "SELECT * from Invoice order by orderId";
+        OResultSet rsi = this.db.query(queryi);
+
+
+
+
+        while(rso.hasNext() && rsi.hasNext()){
+            Optional<OVertex> optional_order = rso.next().getVertex();
+            Optional<OVertex> optional_invoice = rsi.next().getVertex();
+            if(optional_order.isPresent() && optional_invoice.isPresent()) {
+                OVertex order = optional_order.get();
+                OVertex invoice = optional_invoice.get();
+                OEdge result = db.newEdge(order, invoice, db.getClass("HasInvoice"));
+                result.save();
+            }
+        }
+        rso.close();
+        rsi.close();
+
+         */
+
+        String query = "SELECT * from Order";
+        OResultSet rs = this.db.query(query);
+        while(rs.hasNext()){
+            Optional<OVertex> optional = rs.next().getVertex();
+            if(optional.isPresent()) {
+                OVertex order = optional.get();
+                String queryedge = "SELECT * from HasInvoice where OrderId = ?";
+                OResultSet rsedge = this.db.query(queryedge, (String)order.getProperty("OrderId"));
+
+                if(!rsedge.hasNext()) {
+                    rsedge.close();
+                    String queryi = "SELECT * from Invoice where OrderId = ?";
+                    OResultSet rsi = this.db.query(queryi, (String) order.getProperty("OrderId"));
+                    if (rsi.elementStream().count() > 1) {
+                        System.out.println("UN ORDER PEUT AVOIR PLUSIEURS INVOICES");
+                    }
+                    if (rsi.hasNext()) {
+                        System.out.println("LALALA");
+                        Optional<OVertex> optionali = rsi.next().getVertex();
+                        rsi.close();
+                        if (optionali.isPresent()) {
+                            OVertex invoice = optional.get();
+                            OEdge result = db.newEdge(order, invoice, db.getClass("HasInvoice"));
+                            result.setProperty("OrderId", (String) order.getProperty("OrderId"));
+                            result.save();
+                        }
+                    }
+                }
+
+            }
+
+        }
+        rs.close();
+
+
     }
 
     private static OVertex createProduct(ODatabaseSession db, String asin, String title, float price, String imgUrl) {
@@ -157,25 +226,30 @@ public class JsonsLoader {
     }
 
     private static OEdge linkProductToBrand(ODatabaseSession db, String bname, String asin){
-        String query = "SELECT * from VendorVertex where Vendor = ?";
-        OResultSet rsb = db.query(query, bname);
         OEdge result = null;
+        String queryedge = "SELECT * from IsFromBrand where asin = ?";
+        OResultSet rse = db.query(queryedge, asin);
+        if(!rse.hasNext()) {
+            String query = "SELECT * from VendorVertex where Vendor = ?";
+            OResultSet rsb = db.query(query, bname);
 
-        if(rsb.hasNext()){
-            Optional<OVertex> optional = rsb.next().getVertex();
-            rsb.close();
-            if(optional.isPresent()){
-                OVertex Brand = optional.get();
+            if (rsb.hasNext()) {
+                Optional<OVertex> optional = rsb.next().getVertex();
+                rsb.close();
+                if (optional.isPresent()) {
+                    OVertex Brand = optional.get();
 
-                query = "SELECT * from Product where asin = ?";
-                OResultSet rsp = db.query(query, asin);
-                if(rsp.hasNext()){
-                    optional = rsp.next().getVertex();
-                    rsp.close();
-                    if(optional.isPresent()){
-                        OVertex Product = optional.get();
-                        result = db.newEdge(Product, Brand, db.getClass("IsFromBrand"));
-                        result.save();
+                    query = "SELECT * from Product where asin = ?";
+                    OResultSet rsp = db.query(query, asin);
+                    if (rsp.hasNext()) {
+                        optional = rsp.next().getVertex();
+                        rsp.close();
+                        if (optional.isPresent()) {
+                            OVertex Product = optional.get();
+                            result = db.newEdge(Product, Brand, db.getClass("IsFromBrand"));
+                            result.setProperty("asin", asin);
+                            result.save();
+                        }
                     }
                 }
             }
