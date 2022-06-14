@@ -13,11 +13,11 @@ import relational.VendorLoader;
 import xml.InvoiceLoader;
 
 import java.io.IOException;
-import java.sql.Date;
+//import java.sql.Date;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.*;
 
 public class Main {
     //REQUEST 1
@@ -27,7 +27,12 @@ public class Main {
         bought the largest number of products, and return the tag which he/she has engaged the
         greatest times in the posts.
         */
-    public void request1(ODatabaseSession db, String id, Date date) {
+    public static void request1(ODatabaseSession db, String id, Date date) throws ParseException {
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.MONTH, -1);
+        Date lastMonth = cal.getTime();
 
         String queryCust = "SELECT * from Customer where id = ?";
         OResultSet rsCust = db.query(queryCust, id);
@@ -35,28 +40,28 @@ public class Main {
         if (custRes.isPresent()) {
             OVertex customerVertex = (OVertex) custRes.get();
 
-            customerVertex.getProperty("id");
-            customerVertex.getProperty("firstName");
-            customerVertex.getProperty("lastName");
-            customerVertex.getProperty("gender");
-            customerVertex.getProperty("birthday");
-            customerVertex.getProperty("creationDate");
-            customerVertex.getProperty("locationIP");
-            customerVertex.getProperty("browserUsed");
-            customerVertex.getProperty("place");
+            System.out.println((String) customerVertex.getProperty("id"));
+            System.out.println((String) customerVertex.getProperty("firstName"));
+            System.out.println((String) customerVertex.getProperty("lastName"));
+            System.out.println((String) customerVertex.getProperty("gender"));
+            System.out.println((String) customerVertex.getProperty("birthday"));
+            System.out.println((String) customerVertex.getProperty("creationDate"));
+            System.out.println((String) customerVertex.getProperty("locationIP"));
+            System.out.println((String) customerVertex.getProperty("browserUsed"));
+            System.out.println((String) customerVertex.getProperty("place"));
 
             for (OEdge e : customerVertex.getEdges(ODirection.OUT, "hasCreated")) {
                 if (e.getProperty("idPerson").equals(id)) {
                     OVertex post = e.getVertex(ODirection.OUT);
 
-                    post.getProperty("idPost");
-                    post.getProperty("imageFile");
-                    post.getProperty("creationDate");
-                    post.getProperty("locationIP");
-                    post.getProperty("browserUsed");
-                    post.getProperty("language");
-                    post.getProperty("content");
-                    post.getProperty("length");
+                    System.out.println((String) post.getProperty("idPost"));
+                    System.out.println((String) post.getProperty("imageFile"));
+                    System.out.println((String) post.getProperty("creationDate"));
+                    System.out.println((String) post.getProperty("locationIP"));
+                    System.out.println((String) post.getProperty("browserUsed"));
+                    System.out.println((String) post.getProperty("language"));
+                    System.out.println((String) post.getProperty("content"));
+                    System.out.println((String) post.getProperty("length"));
 
                 }
             }
@@ -70,10 +75,10 @@ public class Main {
             Optional<OVertex> optional = rsOrder.next().getVertex();
             if (optional.isPresent()) {
                 OVertex order = optional.get();
-                order.getProperty("OrderId");
-                order.getProperty("PersonId");
-                order.getProperty("OrderDate");
-                order.getProperty("TotalPrice");
+                System.out.println((String) order.getProperty("OrderId"));
+                System.out.println((String) order.getProperty("PersonId"));
+                System.out.println((String) order.getProperty("OrderDate"));
+                System.out.println((Float) order.getProperty("TotalPrice"));
             }
         }
         rsOrder.close();
@@ -84,25 +89,47 @@ public class Main {
             Optional<OVertex> optional = rsInvoice.next().getVertex();
             if (optional.isPresent()) {
                 OVertex invoice = optional.get();
-                invoice.getProperty("OrderId");
-                invoice.getProperty("PersonId");
-                invoice.getProperty("OrderDate");
-                invoice.getProperty("TotalPrice");
+                System.out.println((String) invoice.getProperty("orderId"));
+                System.out.println((String) invoice.getProperty("personId"));
+                System.out.println((Date) invoice.getProperty("orderDate"));
+                System.out.println((Float) invoice.getProperty("price"));
             }
         }
         rsInvoice.close();
 
-        String queryFeedback = "SELECT * from FeedBack where personID = ?";
+        String queryFeedback = "SELECT * from Feedback where personID = ?";
         OResultSet rsFeedback = db.query(queryFeedback, id);
         while (rsFeedback.hasNext()) {
-            Optional<OVertex> optional = rsFeedback.next().getVertex();
+            Optional<OEdge> optional = rsFeedback.next().getEdge();
             if (optional.isPresent()) {
-                OVertex invoice = optional.get();
-                invoice.getProperty("comment");
+                OEdge feedback = optional.get();
+                System.out.println((String) feedback.getProperty("comment"));
             }
         }
         rsFeedback.close();
 
+        String queryHasCreated = "Select * from HasCreated where idPerson = ?";
+        OResultSet rsHasCreated = db.query(queryHasCreated, id);
+        while (rsHasCreated.hasNext()) {
+            Optional<OEdge> optional = rsHasCreated.next().getEdge();
+            if (optional.isPresent()) {
+                OVertex post = optional.get().getVertex(ODirection.OUT);
+                Date datePost = (Date) post.getProperty("creationDate");
+                if (datePost.after(lastMonth) && datePost.before(date)) {
+
+                    System.out.println((String) post.getProperty("idPost"));
+                    System.out.println((String) post.getProperty("imageFile"));
+                    System.out.println((Date)   post.getProperty("creationDate"));
+                    System.out.println((String) post.getProperty("locationIP"));
+                    System.out.println((String) post.getProperty("browserUsed"));
+                    System.out.println((String) post.getProperty("language"));
+                    System.out.println((String) post.getProperty("content"));
+                    System.out.println((Integer) post.getProperty("length"));
+                    System.out.println(datePost);
+                }
+            }
+            rsHasCreated.close();
+        }
     }
 
     /* QUERY 2 :
@@ -115,9 +142,12 @@ public class Main {
     public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        // Replace the arguments with your own database name and user/password
-        // A remplacer avec le nom de la base de donnée et les identifiants
-        ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        long now = System.currentTimeMillis();
+        Date sqlDate = new Date(now);
+        Main.request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
+        System.out.println("done!");
+        db.close();
 
         // LOADING THE PRODUCT DATA
         //VendorLoader vendorLoader = new VendorLoader(db);
@@ -151,6 +181,7 @@ public class Main {
         JsonLoader jsonLoader = new JsonLoader(db);
         jsonLoader.load();
 */
+        /*
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         //customerLoader.load();
@@ -179,7 +210,7 @@ public class Main {
         /* --- TESTS 4.4 CUSTOMERS -- */
         /* -------------------------- */
 
-        ODocument docCustomer1 = new ODocument("Customer");
+       /* ODocument docCustomer1 = new ODocument("Customer");
         docCustomer1.field("id", "123");
         docCustomer1.field("firstName", "Eva");
         docCustomer1.field("lastName", "Radu");
@@ -232,7 +263,7 @@ public class Main {
         /* --- TESTS 4.4 VENDORS -- */
         /* ------------------------ */
 
-        ODocument docVendor1 = new ODocument("VendorVertex");
+       /* ODocument docVendor1 = new ODocument("VendorVertex");
         docVendor1.field("Vendor", "EvaShop");
         docVendor1.field("Country", "Romania");
         docVendor1.field("Industry", "Clothes");
@@ -260,6 +291,6 @@ public class Main {
         vendorLoader.updateManyVendors(db, docsVendor);
         vendorLoader.deleteManyVendors(db, docsVendor);
 
-
+*/
     }
 }
