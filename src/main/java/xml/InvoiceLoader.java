@@ -5,31 +5,26 @@ import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 import org.w3c.dom.*;
-import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 
 import javax.xml.parsers.*;
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class InvoiceLoader {
+    ODatabaseSession db;
 
-    public static void main(String[] args) throws ParserConfigurationException, IOException, SAXException, ParseException {
-        OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
+    public InvoiceLoader(ODatabaseSession db){
+        this.db = db;
+    }
 
-        // Replace the arguments with your own database name and user/password
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
-
+    public void load() throws ParserConfigurationException, IOException, SAXException, ParseException {
 
         if (db.getClass("Invoice") == null) {
             OClass invoice = db.createVertexClass("Invoice");
@@ -39,7 +34,11 @@ public class InvoiceLoader {
             invoice.createProperty("price", OType.FLOAT);
             //product.createProperty("imgUrl", OType.STRING);
             invoice.createIndex("invoice_orderId_index", OClass.INDEX_TYPE.UNIQUE, "orderId");
-
+        }
+        if (db.getClass("Orderline")== null) {
+            OClass Orderline = db.createEdgeClass("Orderline");
+            Orderline.createProperty("productId", OType.STRING);
+            Orderline.createIndex("orderline_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
         }
 
         //Get Document Builder
@@ -53,14 +52,10 @@ public class InvoiceLoader {
         //Normalize the XML Structure; It's just too important !!
         document.getDocumentElement().normalize();
 
-        //Here comes the root node
         Element root = document.getDocumentElement();
-        //System.out.println(root.getNodeName());
 
         //Get all invoices
         NodeList nList = document.getElementsByTagName("Invoice.xml");
-        //System.out.println("============================");
-
 
         List<List<String>> records = new ArrayList<List<String>>();
 
@@ -70,10 +65,7 @@ public class InvoiceLoader {
             //System.out.println("");    //Just a separator
             if (node.getNodeType() == Node.ELEMENT_NODE)
             {
-                //Print each invoice's detail
                 Element eElement = (Element) node;
-                //System.out.println(temp);
-
 
 
                 String orderid = eElement.getElementsByTagName("OrderId").item(0).getTextContent();
@@ -96,8 +88,8 @@ public class InvoiceLoader {
                     Node nodeOL = orderLineList.item(j);
                     if (node.getNodeType() == Node.ELEMENT_NODE) {
                         Element eElementOL = (Element) node;
-                        String productid = eElementOL.getElementsByTagName("productId").item(0).getTextContent();
-                        //System.out.println("Order line - product id: " + productid);
+                        /*String productid = eElementOL.getElementsByTagName("productId").item(0).getTextContent();
+                        System.out.println("Order line - product id: " + productid);
 
                         String asin = eElementOL.getElementsByTagName("asin").item(0).getTextContent();
                         //System.out.println("Order line - asin: " + asin);
@@ -110,16 +102,14 @@ public class InvoiceLoader {
 
                         String brand = eElementOL.getElementsByTagName("brand").item(0).getTextContent();
                         //System.out.println("Order line - brand: " + brand);
+                        */
+                        String productid = eElementOL.getElementsByTagName("productId").item(0).getTextContent();
+                        String asin = eElementOL.getElementsByTagName("asin").item(0).getTextContent();
 
-                        //System.out.println(j);
-                        String[] values = {orderid, personid, orderdate, totalprice, productid, asin, title, price, brand};
+                        String[] values = {orderid, personid, orderdate, totalprice,productid,asin}; // productid, asin, title, price, brand};
                         records.add(Arrays.asList(values));
                     }
                 }
-
-                //String[] values = {orderid, personid, orderdate, totalprice};//, productid, asin, title, price, brand};
-                //records.add(Arrays.asList(values));
-
             }
         }
 
@@ -131,17 +121,18 @@ public class InvoiceLoader {
             OResultSet rs = db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
                 System.out.println(records.get(p).get(1));
-                OVertex obj = createInvoice(db,
+                OVertex invoice = createInvoice(db,
                         records.get(p).get(0),
                         records.get(p).get(1),
                         format.parse(records.get(p).get(2)),
                         Float.parseFloat(records.get(p).get(3))
                         );
+                linkInvoiceToProduct(this.db, invoice,records.get(p).get(4),records.get(p).get(5));
             }
+            rs.close();
         }
 
         db.close();
-        orientDB.close();
     }
 
     private static OVertex createInvoice(ODatabaseSession db,
@@ -155,6 +146,22 @@ public class InvoiceLoader {
         result.setProperty("orderDate", orderDate);
         result.setProperty("price", price);
         result.save();
+        return result;
+    }
+
+    private static OEdge linkInvoiceToProduct(ODatabaseSession db, OVertex invoice, String asin, String productId){
+        String query = "SELECT * from Product where asin = ?";
+        OResultSet rsp = db.query(query, asin);
+        OEdge result = null;
+        if(rsp.hasNext()){
+            Optional<OVertex> optional = rsp.next().getVertex();
+            rsp.close();
+            if(optional.isPresent()){
+                OVertex product = optional.get();
+                result = db.newEdge(invoice, product, db.getClass("Orderline"));
+                result.save();
+            }
+        }
         return result;
     }
 }
