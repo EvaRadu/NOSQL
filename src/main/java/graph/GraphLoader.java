@@ -268,7 +268,6 @@ public class GraphLoader {
         post.save();
     }
 
-
     private void loadTag(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size(); p++){
             String[] line = records.get(p).toString().split(",");
@@ -399,7 +398,6 @@ public class GraphLoader {
             OResultSet rs2 = db.query(query2, idTag);
             Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
             OVertex refTag = optionalID2.get();
-
 
             String query = "SELECT * from HasInterest where idPerson = ? and idTag = ? ";
             OResultSet rs = db.query(query, idPerson, idTag);

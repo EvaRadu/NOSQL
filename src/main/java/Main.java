@@ -119,7 +119,7 @@ public class Main {
 
         // Replace the arguments with your own database name and user/password
         // A remplacer avec le nom de la base de donnée et les identifiants
-        ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         // LOADING THE PRODUCT DATA
         //VendorLoader vendorLoader = new VendorLoader(db);
@@ -156,10 +156,10 @@ public class Main {
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         //customerLoader.load();
-        customerLoader.loadEdges();
+        //customerLoader.loadEdges();
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
-        vendorLoader.load();
+        //vendorLoader.load();
         // exemple de création d'un document, qui sera dans GENERIC CLASS dans la BD
         // pour voir les données dans une classe, choisi la classe et après fait QUERY ALL
 
@@ -269,14 +269,14 @@ public class Main {
         GraphLoader graphLoader = new GraphLoader(db);
 
         /* Créer un post */
-        graphLoader.createPost("1199511627255", "image.png",
+        graphLoader.createPost("1399511627255", "image.png",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-11-18 07:13:13.099+0000"),
                 "43.290.55.178","Chrome", "fr", "A new post", "350");
 
         /* Mise à jour post */
         ODocument post = new ODocument("Post");
-        post.field("id","anotherImage.png");
-        post.field("imageFile","1199511627255");
+        post.field("idPost","1399511627255");
+        post.field("imageFile","anotherImage.png");
         post.field("creationDate",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-12-23 09:13:13.099+0000"));
         post.field("locationIP","43.290.55.178");
@@ -287,5 +287,8 @@ public class Main {
 
         graphLoader.updatePost(post);
     }
-    }
+
+
+    /** Query 4 **/
+
 }
