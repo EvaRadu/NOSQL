@@ -5,9 +5,8 @@ import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
-import com.orientechnologies.orient.core.record.OElement;
-import com.orientechnologies.orient.core.record.ORecord;
-import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.record.*;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 
@@ -19,7 +18,13 @@ import java.util.*;
 
 public class GraphLoader {
 
-    public static void createSocialNetworkGraph(ODatabaseSession db) throws ParseException {
+    ODatabaseSession db;
+
+    public GraphLoader(ODatabaseSession db){
+        this.db = db;
+    }
+
+    public void createSocialNetworkGraph() throws ParseException {
 
         /*
         if (db.getClass("Person") == null) {
@@ -84,10 +89,10 @@ public class GraphLoader {
             hasCreated.createProperty("idPerson", OType.STRING);
             hasCreated.createIndex("hasicreated_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost","idPerson");
         }
-        loadSocialNetworkData(db);
+        loadSocialNetworkData();
     }
 
-    public static void loadSocialNetworkData(ODatabaseSession db) throws ParseException {
+    public void loadSocialNetworkData() throws ParseException {
         List<List<String>> records = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Customer/person_0_0.csv"));) {
             String[] values = null;
@@ -166,7 +171,7 @@ public class GraphLoader {
         //loadHasCreated(records7, db);
     }
 
-    private static void loadPerson(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadPerson(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size(); p++){
             // split string by no space
             String[] line = records.get(p).toString().split("\\|");
@@ -196,12 +201,12 @@ public class GraphLoader {
             // Il donne la première fois seulement comme FALSE et après TRUE sur la même record !!!!!!
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createPerson(db, id, firstName, lastName, gender, birthday,creationDate, locationIP, browserUsed, place );
+                createPerson(id, firstName, lastName, gender, birthday,creationDate, locationIP, browserUsed, place );
             }
             }
         }
 
-    private static void createPerson(ODatabaseSession db, String id, String firstname, String lastname,
+    private void createPerson(String id, String firstname, String lastname,
                                          String gender, Date birthday, Date creationDate,
                                          String locationIP, String browserUsed, String place) {
         OVertex person = db.newVertex("Person");
@@ -217,7 +222,7 @@ public class GraphLoader {
         person.save();
     }
 
-    private static void loadPost(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadPost(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size(); p++){
 
             String[] line = records.get(p).toString().split("\\|");
@@ -243,12 +248,12 @@ public class GraphLoader {
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createPost(db, id, imageFile, creationDate, locationIP, browserUsed,language, content, length );
+                createPost(id, imageFile, creationDate, locationIP, browserUsed,language, content, length );
             }
         }
     }
 
-    private static void createPost(ODatabaseSession db, String id, String imageFile, Date creationDate,
+    public void createPost(String id, String imageFile, Date creationDate,
                                    String locationIP, String browserUsed,
                                    String language, String content, String length) {
         OVertex post = db.newVertex("Post");
@@ -264,7 +269,7 @@ public class GraphLoader {
     }
 
 
-    private static void loadTag(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadTag(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size(); p++){
             String[] line = records.get(p).toString().split(",");
 
@@ -282,19 +287,19 @@ public class GraphLoader {
             // Il donne la première fois seulement comme FALSE et après TRUE sur la même record !!!!!!
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createTag(db, id, name);
+                createTag(id, name);
             }
         }
     }
 
-    private static void createTag(ODatabaseSession db, String id, String name) {
+    private void createTag(String id, String name) {
         OVertex tag = db.newVertex("Tag");
         tag.setProperty("idTag", id);
         tag.setProperty("name",name);
         tag.save();
     }
 
-    private static void loadKnows(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadKnows(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size() ; p++){
             String[] line = records.get(p).toString().split("\\|");
 
@@ -323,12 +328,12 @@ public class GraphLoader {
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createKnows(db, refPerson1, refPerson2, creationDate);
+                createKnows(refPerson1, refPerson2, creationDate);
             }
         }
     }
 
-    private static void createKnows(ODatabaseSession db, OVertex id, OVertex id2, Date creationDate) {
+    private void createKnows( OVertex id, OVertex id2, Date creationDate) {
         OElement knows = db.newEdge(id,id2,"Knows");
         knows.setProperty("idPerson", id.getProperty("id"));
         knows.setProperty("idPerson2", id2.getProperty("id"));
@@ -336,8 +341,7 @@ public class GraphLoader {
         knows.save();
     }
 
-
-    private static void loadHasTag(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadHasTag(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size() ; p++){
             String[] line = records.get(p).toString().split("\\|");
 
@@ -363,19 +367,19 @@ public class GraphLoader {
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createHasTag(db, refPost, refTag);
+                createHasTag(refPost, refTag);
             }
         }
     }
 
-    private static void createHasTag(ODatabaseSession db, OVertex idPost, OVertex idTag) {
+    private void createHasTag(OVertex idPost, OVertex idTag) {
         OElement hasTag = db.newEdge(idPost, idTag, "HasTag");
         hasTag.setProperty("idPost", idPost.getProperty("idPost"));
         hasTag.setProperty("idTag", idTag.getProperty("idTag"));
         hasTag.save();
     }
 
-    private static void loadHasInterest(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadHasInterest(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size() ; p++){
             String[] line = records.get(p).toString().split("\\|");
 
@@ -402,19 +406,19 @@ public class GraphLoader {
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createHasInterest(db, refPerson, refTag);
+                createHasInterest(refPerson, refTag);
             }
         }
     }
 
-    private static void createHasInterest(ODatabaseSession db, OVertex idPerson, OVertex idTag) {
+    private void createHasInterest(OVertex idPerson, OVertex idTag) {
         OElement hasInterest = db.newEdge(idPerson, idTag, "HasInterest");
         hasInterest.setProperty("idPerson", idPerson.getProperty("id"));
         hasInterest.setProperty("idTag", idTag.getProperty("idTag"));
         hasInterest.save();
     }
 
-    private static void loadHasCreated(List<List<String>> records, ODatabaseSession db) throws ParseException {
+    private void loadHasCreated(List<List<String>> records) throws ParseException {
         for(int p=1; p<records.size() ; p++){
             String[] line = records.get(p).toString().split("\\|");
 
@@ -440,15 +444,84 @@ public class GraphLoader {
 
             boolean createOrnot = rs.elementStream().count() == 0;
             if(createOrnot) {
-                createHasCreated(db, refPost, refPerson);
+                createHasCreated(refPost, refPerson);
             }
         }
     }
 
-    private static void createHasCreated(ODatabaseSession db, OVertex idPost, OVertex idPerson) {
+    private void createHasCreated(OVertex idPost, OVertex idPerson) {
         OElement hasCreated = db.newEdge(idPost.getRecord(), idPerson.getRecord(), "HasCreated");
         hasCreated.setProperty("idPost", idPost.getProperty("idPost"));
         hasCreated.setProperty("idPerson", idPerson.getProperty("id"));
         hasCreated.save();
+    }
+
+    public void updatePost(ODocument post){
+        String query = "SELECT * from Post where idPost = ?";
+        OResultSet rs = db.query(query, post.getProperty("idPost").toString());
+        Optional<OVertex> optionalPost = rs.vertexStream().findFirst();
+        OVertex newPost = optionalPost.get();
+
+        newPost.setProperty("browserUsed", post.getProperty("browserUsed"));
+        newPost.setProperty("content", post.getProperty("content"));
+        newPost.setProperty("creationDate", post.getProperty("creationDate"));
+        newPost.setProperty("imageFile", post.getProperty("imageFile"));
+        newPost.setProperty("length", post.getProperty("length"));
+        newPost.setProperty("locationIP", post.getProperty("locationIP"));
+        newPost.setProperty("language", post.getProperty("language"));
+        newPost.save();
+    }
+
+    public void deletePost(OVertex post){
+        post.delete().save();
+    }
+
+    public void deletePost(String postID){
+        String query = "SELECT * from Post where idPost = ?";
+        OResultSet rs = db.query(query, postID);
+        Optional<OVertex> optionalPost = rs.vertexStream().findFirst();
+        OVertex oldPost = optionalPost.get();
+        oldPost.delete().save();
+    }
+
+    public void updateTag(ODocument Tag){
+        String query = "SELECT * from Tag where idTag = ?";
+        OResultSet rs = db.query(query, Tag.getProperty("idTag").toString());
+        Optional<OVertex> optionalTag = rs.vertexStream().findFirst();
+        OVertex newTag = optionalTag.get();
+
+        newTag.setProperty("name", Tag.getProperty("name"));
+        newTag.save();
+    }
+
+    public void updateHasTag(OVertex fromPost, OVertex toTag, OVertex newToTag, OVertex newFromPost){
+        String query = "SELECT * from HasTag where in.idTag = ? and out.idPost = ?";
+
+        OResultSet rs = db.query(query, toTag.getProperty("idTag").toString(), fromPost.getProperty("idPost").toString());
+        Optional<OEdge> optionalhasTag = rs.edgeStream().findFirst();
+        OEdge hasTag = optionalhasTag.get();
+
+        if(newToTag != null){
+            Iterable<OEdge> edges = hasTag.getTo().getEdges(ODirection.IN);
+
+            for(OEdge tag: edges){
+                if(tag.getIdentity().equals(toTag.getIdentity())){
+                    tag.delete();
+                }
+            }
+        hasTag.getFrom().addEdge(newToTag);
+        }
+
+        if(newFromPost != null){
+            Iterable<OEdge> edges = hasTag.getTo().getEdges(ODirection.OUT);
+
+            for(OEdge post: edges){
+                if(post.getIdentity().equals(toTag.getIdentity())){
+                    post.delete();
+                }
+            }
+            hasTag.getTo().addEdge(newFromPost);
+        }
+    hasTag.save();
     }
 }

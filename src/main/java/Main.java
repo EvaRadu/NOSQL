@@ -7,6 +7,7 @@ import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import graph.GraphLoader;
 import json.JsonsLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
@@ -15,6 +16,7 @@ import xml.InvoiceLoader;
 import java.io.IOException;
 import java.sql.Date;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -261,5 +263,29 @@ public class Main {
         vendorLoader.deleteManyVendors(db, docsVendor);
 
 
+
+
+        /*** 4.4 Graph ****/
+        GraphLoader graphLoader = new GraphLoader(db);
+
+        /* Créer un post */
+        graphLoader.createPost("1199511627255", "image.png",
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-11-18 07:13:13.099+0000"),
+                "43.290.55.178","Chrome", "fr", "A new post", "350");
+
+        /* Mise à jour post */
+        ODocument post = new ODocument("Post");
+        post.field("id","anotherImage.png");
+        post.field("imageFile","1199511627255");
+        post.field("creationDate",
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-12-23 09:13:13.099+0000"));
+        post.field("locationIP","43.290.55.178");
+        post.field("browerUsed","Opera");
+        post.field("language","SP");
+        post.field("content","A new post 2");
+        post.field("length","890");
+
+        graphLoader.updatePost(post);
+    }
     }
 }
