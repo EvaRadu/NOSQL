@@ -2,14 +2,17 @@ import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
 import json.JsonsLoader;
+import org.xml.sax.SAXException;
 import relational.VendorLoader;
+import xml.InvoiceLoader;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.text.ParseException;
 
 public class Main {
 
-    public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
+    public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException, ParserConfigurationException, SAXException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password
@@ -22,6 +25,10 @@ public class Main {
         JsonsLoader jsonLoader = new JsonsLoader(db);
         jsonLoader.load();
         jsonLoader.createOutEdges();
+
+        InvoiceLoader invoiceLoader = new InvoiceLoader(db);
+        invoiceLoader.load();
+
 
 
 
