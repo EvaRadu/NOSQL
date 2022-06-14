@@ -1,7 +1,12 @@
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
+import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.ODirection;
+import com.orientechnologies.orient.core.record.OEdge;
+import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.orientechnologies.orient.core.sql.executor.OResultSet;
 import json.JsonsLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
@@ -10,10 +15,95 @@ import xml.InvoiceLoader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public class Main {
+    //REQUEST 1
+        /*
+        For a given customer, find his/her all related data including profile, orders, invoices,
+        feedback, comments, and posts in the last month, return the category in which he/she has
+        bought the largest number of products, and return the tag which he/she has engaged the
+        greatest times in the posts.
+        */
+    public void request1(ODatabaseSession db, String id, Date date) {
 
+        String queryCust = "SELECT * from Customer where id = ?";
+        OResultSet rsCust = db.query(queryCust, id);
+        Optional custRes = rsCust.elementStream().findFirst();
+        if (custRes.isPresent()) {
+            OVertex customerVertex = (OVertex) custRes.get();
+
+            customerVertex.getProperty("id");
+            customerVertex.getProperty("firstName");
+            customerVertex.getProperty("lastName");
+            customerVertex.getProperty("gender");
+            customerVertex.getProperty("birthday");
+            customerVertex.getProperty("creationDate");
+            customerVertex.getProperty("locationIP");
+            customerVertex.getProperty("browserUsed");
+            customerVertex.getProperty("place");
+
+            for (OEdge e : customerVertex.getEdges(ODirection.OUT, "hasCreated")) {
+                if (e.getProperty("idPerson").equals(id)) {
+                    OVertex post = e.getVertex(ODirection.OUT);
+
+                    post.getProperty("idPost");
+                    post.getProperty("imageFile");
+                    post.getProperty("creationDate");
+                    post.getProperty("locationIP");
+                    post.getProperty("browserUsed");
+                    post.getProperty("language");
+                    post.getProperty("content");
+                    post.getProperty("length");
+
+                }
+            }
+
+        }
+
+        String queryOrder = "SELECT * from Order where PersonId = ?";
+        OResultSet rsOrder = db.query(queryOrder, id);
+
+        while(rsOrder.hasNext()){
+            Optional<OVertex> optional = rsOrder.next().getVertex();
+            if(optional.isPresent()){
+                OVertex order = optional.get();
+                order.getProperty("OrderId");
+                order.getProperty("PersonId");
+                order.getProperty("OrderDate");
+                order.getProperty("TotalPrice");
+            }
+        }
+        rsOrder.close();
+
+        String queryInvoice = "SELECT * from Invoice where personId = ?";
+        OResultSet rsInvoice = db.query(queryInvoice, id);
+        while(rsInvoice.hasNext()){
+            Optional<OVertex> optional = rsInvoice.next().getVertex();
+            if(optional.isPresent()){
+                OVertex invoice = optional.get();
+                invoice.getProperty("OrderId");
+                invoice.getProperty("PersonId");
+                invoice.getProperty("OrderDate");
+                invoice.getProperty("TotalPrice");
+            }
+        }
+        rsInvoice.close();
+
+        String queryFeedback = "SELECT * from FeedBack where personID = ?";
+        OResultSet rsFeedback = db.query(queryFeedback, id);
+        while(rsFeedback.hasNext()){
+            Optional<OVertex> optional = rsFeedback.next().getVertex();
+            if(optional.isPresent()){
+                OVertex invoice = optional.get();
+                invoice.getProperty("comment");
+            }
+        }
+        rsFeedback.close();
+
+    }
     public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
@@ -163,6 +253,7 @@ public class Main {
         vendorLoader.insertManyVendors(db,docsVendor);
         vendorLoader.updateManyVendors(db,docsVendor);
         vendorLoader.deleteManyVendors(db,docsVendor);
+
 
 
     }
