@@ -21,7 +21,7 @@ public class Main {
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         // LOADING THE PRODUCT DATA
-        VendorLoader vendorLoader = new VendorLoader(db);
+        /*VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
         JsonsLoader jsonLoader = new JsonsLoader(db);
         jsonLoader.load();
@@ -29,6 +29,7 @@ public class Main {
 
         InvoiceLoader invoiceLoader = new InvoiceLoader(db);
         invoiceLoader.load();
+        */
 
 
 
@@ -38,17 +39,13 @@ public class Main {
 
         //GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records
-
         OVertex v1 = db.newVertex("Tag");
         v1.setProperty("name", "OneRF");
         v1.save();
-
         OVertex v2 = db.newVertex("Post");
         v2.setProperty("content", "TwoTwosSS");
         v2.save();
-
         v1.addEdge(v2, "HasTag").save();
-
         db.commit();
         */
 
@@ -57,16 +54,12 @@ public class Main {
         // LOADING THE PRODUCT DATA
         JsonLoader jsonLoader = new JsonLoader(db);
         jsonLoader.load();
-
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         customerLoader.load();
-
-
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
-
 */
         // exemple de création d'un document, qui sera dans GENERIC CLASS dans la BD
         // pour voir les données dans une classe, choisi la classe et après fait QUERY ALL
@@ -76,11 +69,9 @@ public class Main {
         doc.field( "name", "Luke" );
         doc.field( "surname", "Skywalker" );
         doc.field( "city", "lalala");
-
         // SAVE THE DOCUMENT
         db.save(doc);
         db.commit();
-
         db.close();
     */
 
