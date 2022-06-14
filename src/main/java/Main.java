@@ -2,12 +2,14 @@ import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.orientechnologies.orient.core.sql.executor.OResultSet;
 import json.JsonsLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
 import xml.InvoiceLoader;
 
 import java.io.IOException;
+import java.sql.Date;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -163,6 +165,15 @@ public class Main {
         vendorLoader.insertManyVendors(db,docsVendor);
         vendorLoader.updateManyVendors(db,docsVendor);
         vendorLoader.deleteManyVendors(db,docsVendor);
+
+
+
+    }
+
+    /* QUERY 2 :
+        For a given product during a given period, find the people who commented or
+        posted on it, and had bought it */
+    public void query2(String idProduct, Date beginningDate, Date endDate){
 
 
     }
