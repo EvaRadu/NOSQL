@@ -1,7 +1,14 @@
+import com.orientechnologies.common.collection.OMultiCollectionIterator;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
+import com.orientechnologies.orient.core.db.record.OIdentifiable;
+import com.orientechnologies.orient.core.db.record.ridbag.ORidBag;
+import com.orientechnologies.orient.core.record.ODirection;
+import com.orientechnologies.orient.core.record.OEdge;
+import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 import json.JsonsLoader;
 import relational.CustomerLoader;
@@ -11,8 +18,9 @@ import xml.InvoiceLoader;
 import java.io.IOException;
 import java.sql.Date;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.util.*;
 
 public class Main {
 
@@ -22,6 +30,9 @@ public class Main {
         // Replace the arguments with your own database name and user/password
         // A remplacer avec le nom de la base de donnée et les identifiants
         ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
+
+
+        query2(db,"2094869245");
 
         // LOADING THE PRODUCT DATA
         //VendorLoader vendorLoader = new VendorLoader(db);
@@ -61,7 +72,7 @@ public class Main {
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         //customerLoader.load();
-        customerLoader.loadEdges();
+        //customerLoader.loadEdges();
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
@@ -123,7 +134,7 @@ public class Main {
         docsCustomer.add(docCustomer1);
         docsCustomer.add(docCustomer3);
 
-
+        /*
         customerLoader.insertOneCustomer(db,docCustomer1);
         customerLoader.updateOneCustomer(db,docCustomer2);
         customerLoader.deleteOneCustomer(db,docCustomer2);
@@ -131,6 +142,7 @@ public class Main {
         customerLoader.insertManyCustomers(db,docsCustomer);
         customerLoader.updateManyCustomers(db,docsCustomer);
         customerLoader.deleteManyCustomers(db,docsCustomer);
+        */
 
 
 
@@ -158,7 +170,7 @@ public class Main {
         docsVendor.add(docVendor2);
         docsVendor.add(docVendor3);
 
-
+        /*
         vendorLoader.insertOneVendor(db,docVendor1);
         vendorLoader.updateOneVendor(db,docVendor2);
         vendorLoader.deleteOneVendor(db,docVendor3);
@@ -166,6 +178,7 @@ public class Main {
         vendorLoader.insertManyVendors(db,docsVendor);
         vendorLoader.updateManyVendors(db,docsVendor);
         vendorLoader.deleteManyVendors(db,docsVendor);
+         */
 
 
 
@@ -174,8 +187,35 @@ public class Main {
     /* QUERY 2 :
         For a given product during a given period, find the people who commented or
         posted on it, and had bought it */
-    public void query2(String idProduct, Date beginningDate, Date endDate){
+    public static void query2(ODatabaseSession db, String idProduct){
+
+        String query = "select in_Orderline from Product where asin = ?";
 
 
+        OResultSet rs = db.query(query,idProduct);
+        while(rs.hasNext()) {
+            //Optional<OEdge> optional = rs.next().getEdge();
+            Optional<OResult> optional =  rs.stream().findFirst();
+            System.out.println(optional.get().getPropertyNames());
+            /*
+            Optional<OVertex> optional = rs.next().getVertex();
+            Iterable<OEdge> edges = optional.get().getEdges(ODirection.OUT);
+            for(OEdge orderline: edges){
+                System.out.println(orderline.getTo());
+            }*/
+            //System.out.println(optional.get().getEdges(ODirection.IN));
+
+
+
+            //String query1 = "SELECT * from Order where PersonId = ?";
+            //OResultSet rs1 = db.query(query1, personId);
+            //Optional<OVertex> optional1 = rs1.next().getVertex();
+            //System.out.println(optional1.get().getProperty("in_EdgeCustomerOrder"));
+
+            //System.out.println(optional1.get().getProperty("out_Orderline").toString());
+            //System.out.println(optional1.get().getEdges(ODirection.OUT).iterator().next().getProperty("in").toString());
+
+
+        }
     }
 }
