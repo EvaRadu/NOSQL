@@ -132,6 +132,7 @@ public class JsonsLoader {
     }
 
     public void createOutEdges(){
+        System.out.println("DANS EDGES");
         // Loading the csv BrandByProduct into a list of list of String
         List<List<String>> brandRecords = new ArrayList<List<String>>();
         try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
