@@ -7,6 +7,7 @@ import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import graph.GraphLoader;
 import json.JsonsLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
@@ -18,6 +19,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class Main {
     //REQUEST 1
@@ -149,6 +153,7 @@ public class Main {
         System.out.println("done!");
         db.close();
 
+
         // LOADING THE PRODUCT DATA
         //VendorLoader vendorLoader = new VendorLoader(db);
         //vendorLoader.load();
@@ -185,10 +190,10 @@ public class Main {
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         //customerLoader.load();
-        customerLoader.loadEdges();
+        //customerLoader.loadEdges();
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
-        vendorLoader.load();
+        //vendorLoader.load();
         // exemple de création d'un document, qui sera dans GENERIC CLASS dans la BD
         // pour voir les données dans une classe, choisi la classe et après fait QUERY ALL
 
@@ -291,6 +296,31 @@ public class Main {
         vendorLoader.updateManyVendors(db, docsVendor);
         vendorLoader.deleteManyVendors(db, docsVendor);
 
-*/
+
+        /*** 4.4 Graph ****/
+        GraphLoader graphLoader = new GraphLoader(db);
+
+        /* Créer un post */
+        graphLoader.createPost("1399511627255", "image.png",
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-11-18 07:13:13.099+0000"),
+                "43.290.55.178","Chrome", "fr", "A new post", "350");
+
+        /* Mise à jour post */
+        ODocument post = new ODocument("Post");
+        post.field("idPost","1399511627255");
+        post.field("imageFile","anotherImage.png");
+        post.field("creationDate",
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-12-23 09:13:13.099+0000"));
+        post.field("locationIP","43.290.55.178");
+        post.field("browerUsed","Opera");
+        post.field("language","SP");
+        post.field("content","A new post 2");
+        post.field("length","890");
+
+        graphLoader.updatePost(post);
     }
+
+
+    /** Query 4 **/
+
 }
