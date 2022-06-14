@@ -6,8 +6,12 @@ import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OEdge;
+import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
@@ -35,7 +39,7 @@ public class InvoiceLoader {
             //product.createProperty("imgUrl", OType.STRING);
             invoice.createIndex("invoice_orderId_index", OClass.INDEX_TYPE.UNIQUE, "orderId");
         }
-        if (db.getClass("Orderline")== null) {
+        if (db.getClass("OrderlineInvoice")== null) {
             OClass Orderline = db.createEdgeClass("Orderline");
             Orderline.createProperty("productId", OType.STRING);
             Orderline.createIndex("orderline_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
@@ -163,5 +167,49 @@ public class InvoiceLoader {
             }
         }
         return result;
+    }
+
+    /* --------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE -- */
+    /* --------------------------------------- */
+
+
+    public static void insertOneVendor(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String vendor = (String) json.get("Vendor");
+        String country = (String) json.get("Country");
+        String industry = (String) json.get("Industry");
+
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        if (!rs.elementStream().findFirst().isPresent()) {
+            //createInvoice(db, vendor, country, industry);
+            System.out.println("The vendor " + vendor + " has been inserted");
+        } else {
+            System.out.println("The vendor " + vendor + " is already present among the vendor vertices");
+        }
+    }
+
+    public static void deleteOneInvoice(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String invoice = (String) json.get("Invoice");
+
+        String query = "SELECT * from Invoice where Invoice = ?";
+        OResultSet rs = db.query(query, invoice);
+        Optional invoiceRes = rs.elementStream().findFirst();
+        if (invoiceRes.isPresent()) {
+            db.delete((OVertex) invoiceRes.get());
+            System.out.println("The invoice " + invoice + " has been deleted");
+        } else {
+            System.out.println("The invoice " + invoice + " is already not present.");
+        }
     }
 }
