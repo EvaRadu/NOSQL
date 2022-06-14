@@ -21,7 +21,7 @@ public class Main {
 
         // Replace the arguments with your own database name and user/password
         // A remplacer avec le nom de la base de donnée et les identifiants
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
 
         // LOADING THE PRODUCT DATA
         //VendorLoader vendorLoader = new VendorLoader(db);
@@ -60,7 +60,8 @@ public class Main {
 */
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
-        customerLoader.load();
+        //customerLoader.load();
+        customerLoader.loadEdges();
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();

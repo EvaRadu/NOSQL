@@ -76,6 +76,18 @@ public class CustomerLoader {
         System.out.println("The Customers have been loaded");
     }
 
+    public void loadEdges(){
+        String query = "SELECT * from Customer";
+        OResultSet rs = db.query(query);
+        while(rs.hasNext()){
+            if (db.getClass("EdgeCustomerOrder") == null) {
+                OClass edgeVendorProduct = db.createEdgeClass("EdgeCustomerOrder");
+            }
+            createEdgeCustomerOrder(db, rs.vertexStream().findFirst().get());
+        }
+
+    }
+
     private static OVertex createCustomer(ODatabaseSession db, String id, String firstName, String lastName,
                                           String gender, String birthday, String creationDate, String locationIP,
                                           String browserUsed, String place) {
@@ -103,7 +115,7 @@ public class CustomerLoader {
 
     private static void createEdgeCustomerOrder(ODatabaseSession db, OVertex customer){
         String idCustomer = customer.getProperty("id").toString();
-        //System.out.println(idCustomer);
+        System.out.println(idCustomer);
 
         String query = "SELECT * from Order where PersonId = ?";
         OResultSet rsp = db.query(query, idCustomer);
