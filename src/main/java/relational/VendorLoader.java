@@ -108,6 +108,7 @@ public class VendorLoader {
 
 
             */
+        System.out.println("The Vendors have been loaded");
     }
 
     private static OElement createVendor(ODatabaseSession db, String vendor, String country, String industry) {
@@ -131,13 +132,9 @@ public class VendorLoader {
 
     public static void insertOneVendor(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String vendor = (String) json.get("Vendor");
-        String country = (String) json.get("Country");
-        String industry = (String) json.get("Industry");
+        String vendor = doc.getProperty("Vendor");
+        String country = doc.getProperty("Country");
+        String industry = doc.getProperty("Industry");
 
         String query = "SELECT * from VendorVertex where Vendor = ?";
         OResultSet rs = db.query(query, vendor);
@@ -155,7 +152,8 @@ public class VendorLoader {
         String s = r.toJSON();
         JSONObject json = (JSONObject) JSONValue.parse(s);
 
-        String vendor = (String) json.get("Vendor");
+
+        String vendor = doc.getProperty("Vendor");
 
         String query = "SELECT * from VendorVertex where Vendor = ?";
         OResultSet rs = db.query(query, vendor);
@@ -170,13 +168,9 @@ public class VendorLoader {
 
     public static void updateOneVendor(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String vendor = (String) json.get("Vendor");
-        String country = (String) json.get("Country");
-        String industry = (String) json.get("Industry");
+        String vendor = doc.getProperty("Vendor");
+        String country = doc.getProperty("Country");
+        String industry = doc.getProperty("Industry");
 
         String query = "SELECT * from VendorVertex where Vendor = ?";
         OResultSet rs = db.query(query, vendor);
