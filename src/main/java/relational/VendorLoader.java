@@ -9,8 +9,12 @@ import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OElement;
+import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -24,11 +28,12 @@ import java.util.Optional;
 public class VendorLoader {
 
     ODatabaseSession db;
+
     public VendorLoader(ODatabaseSession db) {
         this.db = db;
     }
 
-    public void load(){
+    public void load() {
         if (this.db.getClass("VendorVertex") == null) {
             OClass vendor = this.db.createVertexClass("VendorVertex");
             vendor.createProperty("Vendor", OType.STRING);
@@ -50,11 +55,11 @@ public class VendorLoader {
         }
 
         // Line 0 only contains the columns names, so we start at line 1
-        for(int p=1; p<records.size(); p++){
+        for (int p = 1; p < records.size(); p++) {
             // We check if the vendor already exists before adding it
             String query = "SELECT * from VendorVertex where Vendor = ?";
             OResultSet rs = this.db.query(query, records.get(p).get(0));
-            if(rs.elementStream().count()==0) {
+            if (rs.elementStream().count() == 0) {
                 createVendor(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
             }
         }
@@ -114,9 +119,100 @@ public class VendorLoader {
         return result;
     }
 
-    private static void createEdgeVendorProduct(ODatabaseSession db, OVertex vendor,OVertex product) {
-        vendor.addEdge(product,"edgeVendorProduct").save();
+    private static void createEdgeVendorProduct(ODatabaseSession db, OVertex vendor, OVertex product) {
+        vendor.addEdge(product, "edgeVendorProduct").save();
         db.commit();
+    }
+
+
+    /* --------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE -- */
+    /* --------------------------------------- */
+
+    public static void insertOneVendor(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String vendor = (String) json.get("Vendor");
+        String country = (String) json.get("Country");
+        String industry = (String) json.get("Industry");
+
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        if (!rs.elementStream().findFirst().isPresent()) {
+            createVendor(db, vendor, country, industry);
+            System.out.println("The vendor " + vendor + " has been inserted");
+        } else {
+            System.out.println("The vendor " + vendor + " is already present among the vendor vertices");
+        }
+    }
+
+    public static void deleteOneVendor(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String vendor = (String) json.get("Vendor");
+
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        Optional vendorRes = rs.elementStream().findFirst();
+        if (vendorRes.isPresent()) {
+            db.delete((OVertex) vendorRes.get());
+            System.out.println("The vendor " + vendor + " has been deleted");
+        } else {
+            System.out.println("The vendor " + vendor + " is already not present.");
+        }
+    }
+
+    public static void updateOneVendor(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String vendor = (String) json.get("Vendor");
+        String country = (String) json.get("Country");
+        String industry = (String) json.get("Industry");
+
+        String query = "SELECT * from VendorVertex where Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+        Optional vendorRes = rs.elementStream().findFirst();
+        if (vendorRes.isPresent()) {
+            OVertex customerVertex = (OVertex) vendorRes.get();
+            db.delete(customerVertex);
+            createVendor(db, vendor, country, industry);
+
+            System.out.println("The vendor " + vendor + " has been updated");
+        } else {
+            System.out.println("The vendor " + vendor + " is not present.");
+        }
+    }
+
+    /* ------------------------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE FOR MANY VALUES -- */
+    /* ------------------------------------------------------- */
+
+    public static void insertManyVendors(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            //System.out.println(document);
+            insertOneVendor(db, document);
+        }
+    }
+
+    public static void updateManyVendors(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            updateOneVendor(db, document);
+        }
+    }
+
+    public static void deleteManyVendors(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            deleteOneVendor(db, document);
+        }
     }
 
 }
