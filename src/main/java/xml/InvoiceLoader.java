@@ -40,9 +40,9 @@ public class InvoiceLoader {
             invoice.createIndex("invoice_orderId_index", OClass.INDEX_TYPE.UNIQUE, "orderId");
         }
         if (db.getClass("OrderlineInvoice")== null) {
-            OClass Orderline = db.createEdgeClass("OrderlineInvoice");
-            Orderline.createProperty("productId", OType.STRING);
-            Orderline.createIndex("orderlineInvoice_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
+            OClass OrderlineInvoice = db.createEdgeClass("OrderlineInvoice");
+            OrderlineInvoice.createProperty("productId", OType.STRING);
+            OrderlineInvoice.createIndex("orderlineInvoice_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
         }
 
         //Get Document Builder
