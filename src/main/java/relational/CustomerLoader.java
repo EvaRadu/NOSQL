@@ -71,6 +71,7 @@ public class CustomerLoader {
                         records.get(p).get(6),records.get(p).get(7),records.get(p).get(8));
             }
         }
+        System.out.println("The Customers have been loaded");
     }
 
     private static OVertex createCustomer(ODatabaseSession db, String id, String firstName, String lastName,
@@ -97,19 +98,15 @@ public class CustomerLoader {
 
     public static void insertOneCustomer(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String id = (String) json.get("id");
-        String firstName = (String) json.get("firstName");
-        String lastName = (String) json.get("lastName");
-        String gender = (String) json.get("gender");
-        String birthday = (String) json.get("birthday");
-        String creationDate = (String) json.get("creationDate");
-        String locationIP = (String) json.get("locationIP");
-        String browserUsed = (String) json.get("browserUsed");
-        String place = (String) json.get("place");
+        String id = doc.getProperty("id");
+        String firstName = doc.getProperty("firstName");
+        String lastName = doc.getProperty("lastName");
+        String gender = doc.getProperty("gender");
+        String birthday = doc.getProperty("birthday");
+        String creationDate = doc.getProperty("creationDate");
+        String locationIP = doc.getProperty("locationIP");
+        String browserUsed = doc.getProperty("browserUsed");
+        String place = doc.getProperty("place");
 
         String query = "SELECT * from Customer where id = ?";
         OResultSet rs = db.query(query, id);
@@ -124,12 +121,8 @@ public class CustomerLoader {
 
     public static void deleteOneCustomer(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String id = (String) json.get("id");
-        String firstName = (String) json.get("firstName");
+        String id = doc.getProperty("id");
+        String firstName = doc.getProperty("firstName");
 
         String query = "SELECT * from Customer where id = ?";
         OResultSet rs = db.query(query, id);
@@ -145,19 +138,15 @@ public class CustomerLoader {
 
     public static void updateOneCustomer(ODatabaseSession db,ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String id = (String) json.get("id");
-        String firstName = (String) json.get("firstName");
-        String lastName = (String) json.get("lastName");
-        String gender = (String) json.get("gender");
-        String birthday = (String) json.get("birthday");
-        String creationDate = (String) json.get("creationDate");
-        String locationIP = (String) json.get("locationIP");
-        String browserUsed = (String) json.get("browserUsed");
-        String place = (String) json.get("place");
+        String id = doc.getProperty("id");
+        String firstName = doc.getProperty("firstName");
+        String lastName = doc.getProperty("lastName");
+        String gender = doc.getProperty("gender");
+        String birthday = doc.getProperty("birthday");
+        String creationDate = doc.getProperty("creationDate");
+        String locationIP = doc.getProperty("locationIP");
+        String browserUsed = doc.getProperty("browserUsed");
+        String place = doc.getProperty("place");
 
         String query = "SELECT * from Customer where id = ?";
         OResultSet rs = db.query(query, id);

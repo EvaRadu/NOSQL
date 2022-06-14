@@ -7,13 +7,14 @@ import relational.CustomerLoader;
 import relational.VendorLoader;
 import xml.InvoiceLoader;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
 
-    public static void main(String[] args) throws ParseException {
+    public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         // Replace the arguments with your own database name and user/password
@@ -21,12 +22,12 @@ public class Main {
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         // LOADING THE PRODUCT DATA
-        /*VendorLoader vendorLoader = new VendorLoader(db);
-        vendorLoader.load();
-        JsonsLoader jsonLoader = new JsonsLoader(db);
-        jsonLoader.load();
-        jsonLoader.createOutEdges();
-
+        //VendorLoader vendorLoader = new VendorLoader(db);
+        //vendorLoader.load();
+        //JsonsLoader jsonLoader = new JsonsLoader(db);
+        //jsonLoader.load();
+        //jsonLoader.createOutEdges();
+        /*
         InvoiceLoader invoiceLoader = new InvoiceLoader(db);
         invoiceLoader.load();
         */
@@ -54,13 +55,13 @@ public class Main {
         // LOADING THE PRODUCT DATA
         JsonLoader jsonLoader = new JsonLoader(db);
         jsonLoader.load();
+*/
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
         customerLoader.load();
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
-*/
         // exemple de création d'un document, qui sera dans GENERIC CLASS dans la BD
         // pour voir les données dans une classe, choisi la classe et après fait QUERY ALL
 
@@ -119,7 +120,7 @@ public class Main {
         docsCustomer.add(docCustomer1);
         docsCustomer.add(docCustomer3);
 
-        CustomerLoader customerLoader = new CustomerLoader(db);
+
         customerLoader.insertOneCustomer(db,docCustomer1);
         customerLoader.updateOneCustomer(db,docCustomer2);
         customerLoader.deleteOneCustomer(db,docCustomer2);
@@ -154,7 +155,6 @@ public class Main {
         docsVendor.add(docVendor2);
         docsVendor.add(docVendor3);
 
-        VendorLoader vendorLoader = new VendorLoader(db);
 
         vendorLoader.insertOneVendor(db,docVendor1);
         vendorLoader.updateOneVendor(db,docVendor2);
