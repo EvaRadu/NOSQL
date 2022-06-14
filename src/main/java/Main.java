@@ -232,23 +232,56 @@ public class Main {
 
     }
 
+    /*
+        Query 8 :
+         For all the products of a given category during a given year, compute its total sales
+         amount, and measure its popularity in the social media.
+    */
+    public static void query8(ODatabaseSession db) throws ParseException {
+        // GETTING THE ORDER DATES OF THE PRODUCT
+        String queryDate = "SELECT IN(\"Orderline\").OrderDate from Product";
+        OResultSet rsDate = db.query(queryDate);
+        ArrayList<String> dateRes = new ArrayList<>();
+        while(rsDate.hasNext()) {
+            OResult optional = rsDate.next();
+            dateRes = optional.getProperty("IN(\"Orderline\").OrderDate");
+        }
+        System.out.println(dateRes);
+    }
 
 
 
 
-    public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
+
+
+        public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
+
+        /* -------------- */
+        /* -- PARTIE 5 -- */
+        /* -------------- */
+
+        // QUERY 1
+
+        /*
         long now = System.currentTimeMillis();
         Date sqlDate = new Date(now);
         Main.request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
         System.out.println("done!");
         db.close();
+         */
 
 
-        //System.out.println(bool);
-        query2(db,"B005FUKW6M","2018-12-18", "2021-01-18");
+        // QUERY 2
+        //query2(db,"B005FUKW6M","2018-12-18", "2021-01-18");
+
+
+            //QUERY 8
+            //query8(db);
+
+
 
         // LOADING THE PRODUCT DATA
         //VendorLoader vendorLoader = new VendorLoader(db);
