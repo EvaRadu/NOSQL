@@ -6,10 +6,13 @@ import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.ODirection;
 import com.orientechnologies.orient.core.record.OEdge;
+import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.OVertex;
+import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -168,6 +171,7 @@ public class JsonsLoader {
 
          */
 
+        /*
         String query = "SELECT * from Order";
         OResultSet rs = this.db.query(query);
         while(rs.hasNext()){
@@ -201,6 +205,8 @@ public class JsonsLoader {
 
         }
         rs.close();
+
+         */
 
 
     }
@@ -272,6 +278,100 @@ public class JsonsLoader {
         }
         return result;
     }
+
+
+
+    public static void insertOneOrder(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String orderId = (String) json.get("OrderId");
+        String personId = (String) json.get("PersonId");
+        String orderDate = (String) json.get("OrderDate");
+        Double price = (Double) json.get("Price");
+        String asin = (String) json.get("asin");
+        String productId = (String) json.get("ProductId");
+
+        String query = "SELECT * from Order where OrderId = ?";
+        OResultSet rs = db.query(query, orderId);
+        if (!rs.elementStream().findFirst().isPresent()) {
+            rs.close();
+            OVertex order = createOrder(db, orderId, personId, orderDate, price);
+            query = "SELECT * from Product where asin = ?";
+            OResultSet rsp = db.query(query, asin);
+            if (rsp.elementStream().findFirst().isPresent()) {
+                Optional<OVertex> optional = rsp.next().getVertex();
+                if(optional.isPresent()) {
+                    OVertex product = optional.get();
+                    rsp.close();
+                    OEdge edge = db.newEdge(order, product, db.getClass("Orderline"));
+                    edge.setProperty("ProductId", productId);
+                    edge.save();
+                }
+            }
+            order.save();
+            System.out.println("The Order " + orderId + " has been inserted");
+        } else {
+            System.out.println("The Order " + orderId + " is already present among the Order vertices");
+        }
+    }
+
+
+    public static void updateOrder(ODatabaseSession db, ODocument doc) {
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String orderId = (String) json.get("OrderId");
+        String personId = (String) json.get("PersonId");
+        String orderDate = (String) json.get("OrderDate");
+        Double price = (Double) json.get("Price");
+
+        String query = "SELECT * from Order where OrderId = ?";
+        OResultSet rs = db.query(query, orderId);
+
+        if (rs.elementStream().findFirst().isPresent()) {
+            Optional<OVertex> optional = rs.next().getVertex();
+            if (optional.isPresent()) {
+                OVertex order = optional.get();
+                order.setProperty("PersonId", personId);
+                order.setProperty("OrderDate", orderDate);
+                order.setProperty("Price", price.floatValue());
+                System.out.println("The Order " + orderId + " has been updated");
+            }
+        } else {
+            System.out.println("The Order " + orderId + " is not present");
+        }
+        rs.close();
+    }
+
+    public static void deleteOneOrder(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String orderId = (String) json.get("OrderId");
+
+        String query = "SELECT * from Order where OrderId = ?";
+        OResultSet rs = db.query(query, orderId);
+
+        if (rs.elementStream().findFirst().isPresent()) {
+            Optional<OVertex> optional = rs.next().getVertex();
+            if (optional.isPresent()) {
+                OVertex order = optional.get();
+                db.delete(order);
+                System.out.println("The Order " + orderId + " has been deleted");
+            } else {
+                System.out.println("The Order " + orderId + " is not present.");
+            }
+        }
+    }
+
+
+
 
 
 }
