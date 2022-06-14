@@ -106,7 +106,7 @@ public class InvoiceLoader {
                         String productid = eElementOL.getElementsByTagName("productId").item(0).getTextContent();
                         String asin = eElementOL.getElementsByTagName("asin").item(0).getTextContent();
 
-                        String[] values = {orderid, personid, orderdate, totalprice,productid,asin}; // productid, asin, title, price, brand};
+                        String[] values = {orderid, personid, orderdate, totalprice,asin, productid}; // productid, asin, title, price, brand};
                         records.add(Arrays.asList(values));
                     }
                 }
@@ -120,7 +120,7 @@ public class InvoiceLoader {
             String query = "SELECT * from Invoice where orderId = ?";
             OResultSet rs = db.query(query, records.get(p).get(0));
             if(rs.elementStream().count()==0) {
-                System.out.println(records.get(p).get(1));
+                //System.out.println(records.get(p).get(1));
                 OVertex invoice = createInvoice(db,
                         records.get(p).get(0),
                         records.get(p).get(1),
@@ -158,7 +158,7 @@ public class InvoiceLoader {
             rsp.close();
             if(optional.isPresent()){
                 OVertex product = optional.get();
-                result = db.newEdge(invoice, product, db.getClass("Orderline"));
+                result = db.newEdge(invoice, product, db.getClass("OrderlineInvoice"));
                 result.save();
             }
         }
