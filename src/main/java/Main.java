@@ -5,6 +5,7 @@ import com.orientechnologies.orient.core.record.impl.ODocument;
 import json.JsonsLoader;
 import relational.CustomerLoader;
 import relational.VendorLoader;
+import xml.InvoiceLoader;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -20,14 +21,14 @@ public class Main {
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
         // LOADING THE PRODUCT DATA
-        /*
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
         JsonsLoader jsonLoader = new JsonsLoader(db);
         jsonLoader.load();
         jsonLoader.createOutEdges();
 
-*/
+        InvoiceLoader invoiceLoader = new InvoiceLoader(db);
+        invoiceLoader.load();
 
 
 
