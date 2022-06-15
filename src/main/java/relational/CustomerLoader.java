@@ -7,6 +7,7 @@ import com.orientechnologies.orient.core.db.OrientDBConfig;
 import com.orientechnologies.orient.core.id.ORID;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OType;
+import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.ORecord;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
@@ -32,7 +33,7 @@ public class CustomerLoader {
     }
 
 
-    public void load(){
+    public void load() {
         if (this.db.getClass("Customer") == null) {
             OClass customer = db.createVertexClass("Customer");
             customer.createProperty("id", OType.STRING);
@@ -50,7 +51,7 @@ public class CustomerLoader {
 
         // Loading the csv product into a list of list of String
         List<List<String>> records = new ArrayList<List<String>>();
-        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Customer/person_0_0.csv"),'|');) {
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Customer/person_0_0.csv"), '|');) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
                 records.add(Arrays.asList(values));
@@ -60,18 +61,31 @@ public class CustomerLoader {
         }
 
         // Line 0 only contains the columns names, so we start at line 1
-        for(int p=1; p<records.size(); p++){
+        for (int p = 1; p < records.size(); p++) {
             // We check if the customer already exists before adding it
             String query = "SELECT * from Customer where id = ?";
 
             OResultSet rs = this.db.query(query, records.get(p).get(0));
-            if(rs.elementStream().count()==0) {
+            if (rs.elementStream().count() == 0) {
                 createCustomer(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2),
-                        records.get(p).get(3),records.get(p).get(4),records.get(p).get(5),
-                        records.get(p).get(6),records.get(p).get(7),records.get(p).get(8));
+                        records.get(p).get(3), records.get(p).get(4), records.get(p).get(5),
+                        records.get(p).get(6), records.get(p).get(7), records.get(p).get(8));
+
             }
         }
         System.out.println("The Customers have been loaded");
+    }
+
+    public void loadEdges(){
+        String query = "SELECT * from Customer";
+        OResultSet rs = db.query(query);
+        while(rs.hasNext()){
+            if (db.getClass("EdgeCustomerOrder") == null) {
+                OClass edgeVendorProduct = db.createEdgeClass("EdgeCustomerOrder");
+            }
+            createEdgeCustomerOrder(db, rs.vertexStream().findFirst().get());
+        }
+
     }
 
     private static OVertex createCustomer(ODatabaseSession db, String id, String firstName, String lastName,
@@ -89,8 +103,34 @@ public class CustomerLoader {
         result.setProperty("place", place);
 
         result.save();
+        /*
+        if (db.getClass("EdgeCustomerOrder") == null) {
+            OClass edgeVendorProduct = db.createEdgeClass("EdgeCustomerOrder");
+        }
+
+        createEdgeCustomerOrder(db, result);
+         */
         return result;
     }
+
+    private static void createEdgeCustomerOrder(ODatabaseSession db, OVertex customer){
+        String idCustomer = customer.getProperty("id").toString();
+        System.out.println(idCustomer);
+
+        String query = "SELECT * from Order where PersonId = ?";
+        OResultSet rsp = db.query(query, idCustomer);
+        if(rsp.hasNext()){
+            Optional<OVertex> optional = rsp.next().getVertex();
+            rsp.close();
+            if(optional.isPresent()){
+                OVertex order = optional.get();
+                customer.addEdge(order,"EdgeCustomerOrder");
+                customer.save();
+            }
+        }
+    }
+
+
 
     /* --------------------------------------- */
     /* -- METHODS INSERT, UPDATE AND DELETE -- */
