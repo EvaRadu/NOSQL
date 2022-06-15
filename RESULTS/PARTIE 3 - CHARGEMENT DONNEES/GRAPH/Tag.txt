@@ -1,0 +1,55 @@
+Le fichier Tag.csv n'existait pas dans les données de base
+On l'a généré dans https://www.onlinedatagenerator.com/
+On a généré 20 000 lignes pour satisfaire le nombre des IDTag dans l'entité Post
+
+Tag (Vertex) noeud
+
+1) Création de classe Tag
+ if (db.getClass("Tag") == null) {
+            OClass tag = db.createVertexClass("Tag");
+            tag.createProperty("idTag", OType.STRING);
+            tag.createProperty("name", OType.STRING);
+            tag.createIndex("Tag_id_index", OClass.INDEX_TYPE.UNIQUE, "idTag");
+ }
+
+ 2) Chargement de fichier CSV
+   List<List<String>> records3 = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/tag.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records3.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+3) On prépare les données pour créer l'entité Tag
+ private void loadTag(List<List<String>> records) throws ParseException {
+        for (int p = 1; p < records.size(); p++) {
+            String[] line = records.get(p).toString().split(",");
+
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
+
+            ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
+            String id = lineArray.get(0);
+            String name = lineArray.get(1);
+
+            String query = "SELECT * from Tag where idTag = ?";
+            OResultSet rs = db.query(query, id);
+
+            // Quand on appel rs.elementStream().count()rs.elementStream().count()
+            // Il donne la première fois seulement comme FALSE et après TRUE sur la même record !!!!!!
+            boolean createOrnot = rs.elementStream().count() == 0;
+            if (createOrnot) {
+                createTag(id, name);
+            }
+        }
+    }
+
+4) On crée l'entité Tag dans la base et on persiste avec save()
+   private void createTag(String id, String name) {
+        OVertex tag = db.newVertex("Tag");
+        tag.setProperty("idTag", id);
+        tag.setProperty("name", name);
+        tag.save();
+    }

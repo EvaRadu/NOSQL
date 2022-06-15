@@ -168,12 +168,12 @@ public class GraphLoader {
             throw new RuntimeException(e);
         }
 
-        //loadPost(records2, db);
-        //loadTag(records3, db);
-        //loadKnows(records4, db);
-        //loadHasTag(records5, db);
-        //loadHasInterest(records6, db);
-        //loadHasCreated(records7, db);
+        loadPost(records2);
+        loadTag(records3);
+        loadKnows(records4);
+        loadHasTag(records5);
+        loadHasInterest(records6);
+        loadHasCreated(records7);
     }
 
     private void loadPerson(List<List<String>> records) throws ParseException {
