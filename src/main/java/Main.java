@@ -7,6 +7,7 @@ import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import graph.GraphLoader;
 import org.xml.sax.SAXException;
 import relational.CustomerLoader;
 import relational.VendorLoader;
