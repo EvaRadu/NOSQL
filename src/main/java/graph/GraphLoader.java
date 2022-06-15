@@ -573,6 +573,7 @@ public class GraphLoader {
             customersOridsString = customersOridsString.replace("]", "");
             String[] customersOrids  = customersOridsString.split(",");
 
+            System.out.println("People found in the interesction of the friends graph of 2 customers");
             for(String orid : customersOrids)
             {
                 String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
