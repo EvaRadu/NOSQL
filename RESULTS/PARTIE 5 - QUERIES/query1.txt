@@ -7,7 +7,7 @@
         */
         
         /* EXPLICATIONS : 
-	 - Pour récupérer le profil, les invoice, les orders, les feedbacks on recourt à de simples requêtes OrientDb où la recherche est paramétrée par l'id donné en paramètre.
+	 - Pour récupérer le profil, les invoices, les orders, les feedbacks on recourt à de simples requêtes OrientDb où la recherche est paramétrée par l'id donné en paramètre.
 	 
 	 - Pour trouver les posts créés par la personne au cours du dernier mois (par rapport à la date donnée en paramètre étant donné que certaines données datent d'il y a plusieurs années), je récupère la date donnée en paramètre. Grâce au module Calandar de java je crée une variable de type Date contenant la date donnée en paramètre - 1 mois. Et je compare les dates des posts retrouvés grâce à la requête :  "Select * from HasCreated where idPerson = ?"
 	     
@@ -17,7 +17,7 @@
         Enfin, je récupère le nom correspondant à l'idTag : "SELECT name from TAG where idTag = ?"
       Et c'est ainsi qu'on obtient la catégorie pour laquelle la personne a le plus acheté de produit.
       
-      - Pour trouver le tag par rapport auquel l'utilisateur a le pus posté, j'effectue la requête suivante : "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = ?) GROUP BY idTag ORDER BY nbTags DESC". Dans un premier temps, on récupère les ids de tous les posts créés par la personne. Ensuite, on demande les noms des tags et le nombre de posts par tag des posts qu'on va afficher par ordre décroissant. Il suffit donc de récupérer le  premier élément pour déterminer le tag par rapport auquel la personne a le plus posté.
+      - Pour trouver le tag par rapport auquel l'utilisateur a le plus posté, j'effectue la requête suivante : "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = ?) GROUP BY idTag ORDER BY nbTags DESC". Dans un premier temps, on récupère les ids de tous les posts créés par la personne. Ensuite, on demande les noms des tags et le nombre de posts par tag qu'on va afficher par ordre décroissant. Il suffit donc de récupérer le  premier élément pour déterminer le tag par rapport auquel la personne a le plus posté.
         */
         
         
@@ -345,7 +345,6 @@ in.name:  Lilli Ann
 nbTags: 65
 }
 
-done!
  
  
  

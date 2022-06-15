@@ -10,9 +10,9 @@
     - Pour récupérer les 3 compagnies ayant réalisé le plus de vente dans le pays donné en paramètre, j'utilise la requête : "Select out(\"IsFromBrand\").Vendor as brands, COUNT(*) as nbSells from Product where out(\"IsFromBrand\").Country = ? GROUP BY brands ORDER BY nbSells DESC". 
     En fait, on trouve en utilisant l'edge "IsFromBrand" l'ensemble des produits vendus par les marques d'un pays (celui donné en paramètre). Puis, on compte les produits vendus par marque dans l'ordre décroissant. Et on ne sélectionne que les 3 premiers résultats (ou moins s'il y a moins de 3 marques dans le pays). On récupère ces 3 compagnies dans une ArrayList.
     
-    - Pour comparer le nombre d'acheteurs masculins et féminins dans ces entreprises, on récupère les ids des tous les acheteurs par marque dans un premier temps :  "select out.PersonId as PersonId from Orderline where in.asin in (select asin from Product WHERE OUT(\"IsFromBrand\").Vendor = ?)"
+    - Pour comparer le nombre d'acheteurs masculins et féminins de ces marques, on récupère les ids de tous les acheteurs par marque dans un premier temps :  "select out.PersonId as PersonId from Orderline where in.asin in (select asin from Product WHERE OUT(\"IsFromBrand\").Vendor = ?)"
     Ensuite, conformément à la consigne ("and return the most recent posts of them"), quand on itère sur les ids des acheteurs, on récupère le dernier post de chaque individu : "SELECT out.idPost, out.content, out.creationDate from HASCREATED where idPerson = ? order by out.creationDate DESC" (on trie de manière décroissante les postes créés par un acheteur par date de création).
-    On conserve donc toutes les ids dans une ArrayList.  On dénombre ensuite les acheteurs par genre : "SELECT COUNT(gender) as cptG, gender from Customer where id in ? group by gender order by cptG DESC"; et on sauvegarde ces résultats dans une HashMap. On compare alors les résultats obtenus. 
+    On conserve donc tous les ids dans une ArrayList.  On dénombre ensuite les acheteurs par genre : "SELECT COUNT(gender) as cptG, gender from Customer where id in ? group by gender order by cptG DESC"; et on sauvegarde ces résultats dans une HashMap. On compare alors les résultats obtenus. 
     On itère cet algorithme pour chaque compagnie (3 fois au maximum).
     
     */
