@@ -112,6 +112,8 @@ public class Main {
         }
         rsFeedback.close();
 
+
+        //Select * from Post where idPost in (Select idPost from HasCreated where idPerson=?)
         String queryHasCreated = "Select * from HasCreated where idPerson = ?";
         OResultSet rsHasCreated = db.query(queryHasCreated, id);
         while (rsHasCreated.hasNext()) {
@@ -121,7 +123,6 @@ public class Main {
                 Date datePost = (Date) post.getProperty("creationDate");
                 if (datePost.after(lastMonth) && datePost.before(date)) {
 
-                    System.out.println((String) post.getProperty("idPost"));
                     System.out.println((String) post.getProperty("imageFile"));
                     System.out.println((Date)   post.getProperty("creationDate"));
                     System.out.println((String) post.getProperty("locationIP"));
@@ -133,6 +134,7 @@ public class Main {
                 }
             }
             rsHasCreated.close();
+
         }
     }
 
