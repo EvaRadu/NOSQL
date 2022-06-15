@@ -149,7 +149,7 @@ public class Main {
     }
 
 
-    
+
     /*
      QUERY 2 :
        For a given product during a given period, find the people who commented or
@@ -369,7 +369,6 @@ public class Main {
 
         //FeedbackLoader.chargementFeedback(db);
 
-        //GraphLoader.createSocialNetworkGraph(db);
         /* Exemple pour ajouter des records
         OVertex v1 = db.newVertex("Tag");
         v1.setProperty("name", "OneRF");
@@ -501,31 +500,37 @@ public class Main {
         vendorLoader.deleteManyVendors(db,docsVendor);
          */
 
+        /*** 4.5 Graph ****/
+        GraphLoader graphLoader = new GraphLoader(db);
+        //graphLoader.createEdgeProductTag();
+        /*
 
-
-        /*** 4.4 Graph ****/
-        /*GraphLoader graphLoader = new GraphLoader(db);
-
-        /* Créer un post
+        // Créer un post
         graphLoader.createPost("1399511627255", "image.png",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-11-18 07:13:13.099+0000"),
-                "43.290.55.178","Chrome", "fr", "A new post", "350");
+                "43.290.55.178", "Chrome", "fr", "A new post", "350");
 
-         Mise à jour post
+        // Mise à jour post
         ODocument post = new ODocument("Post");
-        post.field("idPost","1399511627255");
-        post.field("imageFile","anotherImage.png");
+        post.field("idPost", "1399511627255");
+        post.field("imageFile", "anotherImage.png");
         post.field("creationDate",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-12-23 09:13:13.099+0000"));
-        post.field("locationIP","43.290.55.178");
-        post.field("browerUsed","Opera");
-        post.field("language","SP");
-        post.field("content","A new post 2");
-        post.field("length","890");
+        post.field("locationIP", "43.290.55.178");
+        post.field("browerUsed", "Opera");
+        post.field("language", "SP");
+        post.field("content", "A new post 2");
+        post.field("length", "890");
 
-        graphLoader.updatePost(post);*/
+        graphLoader.updatePost(post);
+
+        post.delete().save();
+*/
+
+
+        /** Query 4 **/
+
+       // graphLoader.query4();
+        graphLoader.query4();
     }
-
-
-
 }
