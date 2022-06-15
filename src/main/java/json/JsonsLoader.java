@@ -122,7 +122,7 @@ public class JsonsLoader {
                 // We add the orderlines for this order
                 JSONArray orderlines = (JSONArray)((JSONObject)orderlist.get(o)).get("Orderline");
                 for(int l=0;l<orderlines.size();l++){
-                    //linkOrderToProduct(this.db, order, (String)((JSONObject)orderlines.get(l)).get("asin"), (String)((JSONObject)orderlines.get(l)).get("productId"));
+                    linkOrderToProduct(this.db, order, (String)((JSONObject)orderlines.get(l)).get("asin"), (String)((JSONObject)orderlines.get(l)).get("productId"));
                 }
             }
             rs.close();

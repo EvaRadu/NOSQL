@@ -277,6 +277,77 @@ public class Main {
         return res;
     }
 
+    // We get the ratio of negative reviews for the Products of the given Vendor where the sales
+    // of the Product have been declining for the last quarter
+    public static HashMap<String, Float> query7(ODatabaseSession db, String vendor){
+        HashMap<String, Float> res = new HashMap<>();
+        ArrayList<OVertex> declining_products = new ArrayList<>();
+
+        // We get the products of the vendor
+        String query = "SELECT * from Product where out(\"IsFromBrand\").Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+
+        while(rs.hasNext()){
+
+            Optional<OVertex> product = rs.next().getVertex();
+            if(product.isPresent()){
+
+                // We check if that product has declining sales
+                query = "SELECT * from Orderline where in.asin = ? and out.OrderDate between ? and ?";
+                OResultSet rs2 = db.query(query, (String)product.get().getProperty("asin"), "2021-06-15", "2022-06-15");
+                long current_sales = rs2.stream().count();
+
+                query = "SELECT * from Orderline where in.asin = ? and out.OrderDate between ? and ?";
+                rs2 = db.query(query, (String)product.get().getProperty("asin"), "2020-06-15", "2021-06-15");
+                long last_sales = rs2.stream().count();
+
+                if(current_sales < last_sales){
+                    declining_products.add(product.get());
+                }
+                rs2.close();
+            }
+        }
+        rs.close();
+
+        // We now get the Feedbacks  of these Products
+        ArrayList<OVertex> feedbacks = new ArrayList<>();
+        for(OVertex p :declining_products){
+            float neg = 0;
+            float pos = 0;
+            query = "select * from Feedback where productAsin = ?";
+            OResultSet rs3 = db.query(query, (String)p.getProperty("asin"));
+            while(rs3.hasNext()) {
+                Optional<OVertex> fo = rs3.next().getVertex();
+                if (fo.isPresent()) {
+                    OVertex f = fo.get();
+                    String text = (String) f.getProperty("comment");
+                    // We need to parse the grading in the comment ex: "4.5,blablabla"
+                    String grade = "";
+                    int cpt = 1;
+                    while (text.charAt(cpt) != ",".charAt(0)) {
+                        grade = grade + text.charAt(cpt);
+                        cpt++;
+                    }
+                    float sentiment = Float.parseFloat(grade);
+                    // We keep the comment if the grading is bad
+                    if (sentiment < 2.5) {
+                        neg++;
+                    } else {
+                        pos++;
+                    }
+                }
+                rs3.close();
+            }
+            if(pos+neg == 0){
+                res.put(p.getProperty("asin"), neg);
+            } else {
+                res.put(p.getProperty("asin"), (pos + neg) / neg);
+            }
+        }
+
+        return res;
+    }
+
 
     /*
         Query 8 :
@@ -303,7 +374,8 @@ public class Main {
         public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+
 
         /* -------------- */
         /* -- PARTIE 5 -- */
