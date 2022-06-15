@@ -1,0 +1,47 @@
+// KHAOULA BHOUHLAL
+
+  public void supprimerFeedbackParCustomer(String firstName){
+        String supprimer = "DELETE EDGE Feedback WHERE out.firstName = ?";
+        OResultSet supprimerRes = this.db.query(supprimer,firstName);
+    }
+
+    public void supprimerTousFeedbackParCustomerVertex(OVertex customer){
+        customer.getEdges(ODirection.OUT, "FeedBack").forEach(oEdge -> oEdge.delete().save());
+        this.db.commit();
+    }
+
+    public void majFeedbackChangeCustomer(ODatabaseDocument db, String firstName, String productAsin, String nouveauComment){
+        String supprimer = "UPDATE EDGE Feedback SET out = (SELECT FROM Person WHERE firstName = ?) WHERE in = (SELECT FROM Product WHERE asin = ?)";
+        OResultSet changeCustomer = db.query(supprimer,firstName, productAsin);
+        changeCustomer.close();
+        db.commit();
+    }
+
+    public void majFeedbackParCustomerETProductVertex(OVertex customer, OVertex product, String nouveauComment){
+        Iterable<OEdge> edges = customer.getEdges(ODirection.OUT, "Feedback");
+        for(OEdge feedback: edges){
+            if(feedback.getProperty("productAsin").equals(product.getProperty("productAsin"))){
+                feedback.setProperty("comment", nouveauComment);
+                feedback.save();
+            }
+        }
+        this.db.commit();
+    }
+
+    public void insererFeedback(OVertex customer, OVertex product, String nouveauComment){
+        OEdge nouvFeedback =  db.newEdge(customer, product, "Feedback");
+        nouvFeedback.setProperty("comment", nouveauComment);
+        nouvFeedback.save();
+        db.commit();
+    }
+
+    public void insererFeedbackSQL(OVertex customer, OVertex product, String nouveauComment){
+        String creer = "CREATE EDGE Feedback FROM ? TO ? SET comment = ? ";
+        OResultSet creerRes = this.db.query(creer, customer.getIdentity(), product.getIdentity(), nouveauComment);
+        creerRes.close();
+        db.commit();
+    }
+
+/*
+RESULTATS
+*/

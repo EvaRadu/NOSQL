@@ -1,0 +1,127 @@
+// MOKHTAR SAMY
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION D'UN POST :
+INSERT INTO Post (idPost,imageFile, creationDate, locationIP,browserUsed, language, content, length) VALUES ("123","photo549755814902.jpg", "2019-03-07", "27.34.137.22", "Opera", "French", "About camera NIKON", "337")
+
+// RESULTAT :
+Inserted record '[Post#90:154000{idPost:123,imageFile:photo549755814902.jpg,creationDate:Thu Mar 07 00:00:00 CET 2019,locationIP:27.34.137.22,browserUsed:Opera,language:French,content:About camera NIKON,length:337} v1]' in 0.020000 sec(s).
+
+// VERIFICATION 
+SELECT * FROM Post WHERE idPost="123"
+
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|#   |@RID      |@CLASS|idPost|imageFile            |creationDate       |locationIP  |browserUsed|language|content           |length|
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|0   |#90:154000|Post  |123   |photo549755814902.jpg|2019-03-07 00:00:00|27.34.137.22|Opera      |French  |About camera NIKON|337   |
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+
+1 item(s) found. Query executed in 12.309 sec(s).
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// MODIFICATION D'UN POST :
+UPDATE Post SET language="italian" WHERE idPost="123"
+
+// RESULTAT
+
+Updated record(s) '[{count:1}]' in 10.120000 sec(s).
+
+// VERIFICATION
+SELECT * FROM Post WHERE idPost="123"
+
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|#   |@RID      |@CLASS|idPost|imageFile            |creationDate       |locationIP  |browserUsed|language|content           |length|
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|0   |#90:154000|Post  |123   |photo549755814902.jpg|2019-03-07 00:00:00|27.34.137.22|Opera      |italian |About camera NIKON|337   |
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+
+1 item(s) found. Query executed in 10.015 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION D'UN POST :
+
+DELETE VERTEX Post WHERE idPost="123"
+
+// RESULTAT 
+
+Delete record(s) '[{count:1}]' in 9.997000 sec(s).
+
+// VERIFICATION
+SELECT * FROM Post WHERE idPost="123"
+
+0 item(s) found. Query executed in 9.743 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION DE PLUSIEURS POSTS :
+INSERT INTO Post (idPost,imageFile, creationDate, locationIP,browserUsed, language, content, length) VALUES ("123","photo549755814902.jpg", "2019-03-07", "27.34.137.22", "Opera", "French", "About camera NIKON", "337"), ("124","photo679755814943.jpg", "2019-03-07", "27.34.137.22", "Opera", "Romanian", "About camera CANON", "270")
+
+// RESULTAT 
+
+Inserted record '[Post#91:153999{idPost:123,imageFile:photo549755814902.jpg,creationDate:Thu Mar 07 00:00:00 CET 2019,locationIP:27.34.137.22,browserUsed:Opera,language:French,content:About camera NIKON,length:337} v1, Post#92:153999{idPost:124,imageFile:photo679755814943.jpg,creationDate:Thu Mar 07 00:00:00 CET 2019,locationIP:27.34.137.22,browserUsed:Opera,language:Romanian,content:About camera CANON,length:270} v1]' in 0.049000 sec(s).
+
+// VERIFICATION 
+
+SELECT * FROM Post WHERE idPost="123" or idPost="124"
+
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|#   |@RID      |@CLASS|idPost|imageFile            |creationDate       |locationIP  |browserUsed|language|content           |length|
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|0   |#91:153999|Post  |123   |photo549755814902.jpg|2019-03-07 00:00:00|27.34.137.22|Opera      |French  |About camera NIKON|337   |
+|1   |#92:153999|Post  |124   |photo679755814943.jpg|2019-03-07 00:00:00|27.34.137.22|Opera      |Romanian|About camera CANON|270   |
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+
+2 item(s) found. Query executed in 11.037 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// UPDATE DE PLUSIEURS POSTS :
+
+UPDATE Post SET language="italian" WHERE idPost="123" or idPost="124"
+
+
+// RESULTAT
+
+Updated record(s) '[{count:2}]' in 10.793000 sec(s).
+
+// VERIFICATION
+
+SELECT * FROM Post WHERE idPost="123" or idPost="124"
+
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|#   |@RID      |@CLASS|idPost|imageFile            |creationDate       |locationIP  |browserUsed|language|content           |length|
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+|0   |#91:153999|Post  |123   |photo549755814902.jpg|2019-03-07 00:00:00|27.34.137.22|Opera      |italian |About camera NIKON|337   |
+|1   |#92:153999|Post  |124   |photo679755814943.jpg|2019-03-07 00:00:00|27.34.137.22|Opera      |italian |About camera CANON|270   |
++----+----------+------+------+---------------------+-------------------+------------+-----------+--------+------------------+------+
+
+2 item(s) found. Query executed in 11.306 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION DE PLUSIEURS POSTS :
+
+DELETE VERTEX Post WHERE idPost="123" or idPost="124"
+
+
+// RESULTAT
+Delete record(s) '[{count:2}]' in 11.044000 sec(s).
+
+// VERIFICATION 
+
+SELECT * FROM Post WHERE idPost="123" or idPost="124"
+
+
+0 item(s) found. Query executed in 11.475 sec(s).
+
+
+
+
+
+
+
+

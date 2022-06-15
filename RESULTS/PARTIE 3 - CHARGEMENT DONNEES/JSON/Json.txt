@@ -1,0 +1,376 @@
+// HUGO BULZOMI
+
+public class JsonsLoader {
+    ODatabaseSession db;
+
+    public JsonsLoader(ODatabaseSession db){
+        this.db = db;
+    }
+
+    public void load() throws IOException, ParseException {
+        if (this.db.getClass("Product") == null) {
+            OClass product = db.createVertexClass("Product");
+            product.createProperty("asin", OType.STRING);
+            product.createProperty("title", OType.STRING);
+            product.createProperty("price", OType.FLOAT);
+            product.createProperty("imgUrl", OType.STRING);
+            product.createIndex("product_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
+        }
+        if (this.db.getClass("Order") == null) {
+            OClass product = db.createVertexClass("Order");
+            product.createProperty("OrderId", OType.STRING);
+            product.createProperty("PersonId", OType.STRING);
+            product.createProperty("OrderDate", OType.STRING);
+            product.createProperty("TotalPrice", OType.FLOAT);
+            product.createIndex("order_id_index", OClass.INDEX_TYPE.UNIQUE, "OrderId");
+        }
+        if (this.db.getClass("IsFromBrand")== null) {
+            OClass IsFromBrand = db.createEdgeClass("IsFromBrand");
+            IsFromBrand.createProperty("asin", OType.STRING);
+            IsFromBrand.createIndex("IsFromBrand_asin_index", OClass.INDEX_TYPE.UNIQUE, "asin");
+        }
+        if (this.db.getClass("Orderline")== null) {
+            OClass Orderline = db.createEdgeClass("Orderline");
+            Orderline.createProperty("productId", OType.STRING);
+            Orderline.createIndex("orderline_productId_index", OClass.INDEX_TYPE.NOTUNIQUE, "productId");
+        }
+        if (this.db.getClass("HasInvoice")== null) {
+            OClass HasInvoice = db.createEdgeClass("HasInvoice");
+            HasInvoice.createProperty("OrderId", OType.STRING);
+            HasInvoice.createIndex("HasInvoice_OrderId_index", OClass.INDEX_TYPE.UNIQUE, "OrderId");
+        }
+
+        // Loading the csv product into a list of list of String
+        List<List<String>> productRecords = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/Product.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                productRecords.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Line 0 only contains the columns names, so we start at line 1
+        for(int p=1; p<productRecords.size(); p++){
+            // We check if the product already exists before adding it
+            String query = "SELECT * from Product where asin = ?";
+            OResultSet rs = this.db.query(query, productRecords.get(p).get(0));
+            if(rs.elementStream().count()==0) {
+                createProduct(this.db, productRecords.get(p).get(0), productRecords.get(p).get(1), Float.parseFloat(productRecords.get(p).get(2)), productRecords.get(p).get(0));
+            }
+            rs.close();
+        }
+
+        // The data in Order.json is malformed, so we need to modify it.
+        // We'll add a '[' at the very beginning, a ',' at the end of each line, and a ']' at the very end.
+        BufferedReader inputStream = null;
+        PrintWriter outputStream = null;
+        try {
+            inputStream = new BufferedReader(new FileReader("DATA/Order/Order.json"));
+            outputStream = new PrintWriter(new FileWriter("DATA/Order/OrderParsed.json"));
+            String l;
+            int cpt = 0;
+            while ((l = inputStream.readLine()) != null) {
+                if(cpt==0){outputStream.println("["+l+",");}
+                else if(cpt==142256){
+                    outputStream.println(l + "]");
+                } else {
+                    outputStream.println(l + ",");
+                }
+                cpt++;
+            }
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
+            if (outputStream != null) {
+                outputStream.close();
+            }
+        }
+
+
+        JSONParser jsonParser = new JSONParser();
+        FileReader reader = new FileReader("DATA/Order/OrderParsed.json");
+        Object obj = jsonParser.parse(reader);
+        JSONArray orderlist = (JSONArray) obj;
+        for(int o=0;o<orderlist.size(); o++){
+            // We check if the order already exists before adding it
+            String query = "SELECT * from Order where OrderId = ?";
+            OResultSet rs = this.db.query(query, (String)((JSONObject)orderlist.get(o)).get("OrderId"));
+            if(rs.elementStream().count()==0) {
+                OVertex order = createOrder(this.db, (String)((JSONObject)orderlist.get(o)).get("OrderId"), (String)((JSONObject)orderlist.get(o)).get("PersonId"), (String)((JSONObject)orderlist.get(o)).get("OrderDate"), (Double)((JSONObject)orderlist.get(o)).get("TotalPrice"));
+                // We add the orderlines for this order
+                JSONArray orderlines = (JSONArray)((JSONObject)orderlist.get(o)).get("Orderline");
+                for(int l=0;l<orderlines.size();l++){
+                    linkOrderToProduct(this.db, order, (String)((JSONObject)orderlines.get(l)).get("asin"), (String)((JSONObject)orderlines.get(l)).get("productId"));
+                }
+            }
+            rs.close();
+        }
+        System.out.println("The Jsons have been loaded");
+
+    }
+
+    public void createOutEdges(){
+        System.out.println("DANS EDGES");
+        // Loading the csv BrandByProduct into a list of list of String
+        List<List<String>> brandRecords = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                brandRecords.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        for(int p=0; p<brandRecords.size(); p++){
+            linkProductToBrand(this.db, brandRecords.get(p).get(0), brandRecords.get(p).get(1));
+        }
+
+        // Linking Orders to Invoices
+        /*
+        String query = "SELECT * from Order order by OrderId";
+        OResultSet rso = this.db.query(query);
+        String queryi = "SELECT * from Invoice order by orderId";
+        OResultSet rsi = this.db.query(queryi);
+        while(rso.hasNext() && rsi.hasNext()){
+            Optional<OVertex> optional_order = rso.next().getVertex();
+            Optional<OVertex> optional_invoice = rsi.next().getVertex();
+            if(optional_order.isPresent() && optional_invoice.isPresent()) {
+                OVertex order = optional_order.get();
+                OVertex invoice = optional_invoice.get();
+                OEdge result = db.newEdge(order, invoice, db.getClass("HasInvoice"));
+                result.save();
+            }
+        }
+        rso.close();
+        rsi.close();
+         */
+
+        /*
+        String query = "SELECT * from Order";
+        OResultSet rs = this.db.query(query);
+        while(rs.hasNext()){
+            Optional<OVertex> optional = rs.next().getVertex();
+            if(optional.isPresent()) {
+                OVertex order = optional.get();
+                String queryedge = "SELECT * from HasInvoice where OrderId = ?";
+                OResultSet rsedge = this.db.query(queryedge, (String)order.getProperty("OrderId"));
+                if(!rsedge.hasNext()) {
+                    rsedge.close();
+                    String queryi = "SELECT * from Invoice where OrderId = ?";
+                    OResultSet rsi = this.db.query(queryi, (String) order.getProperty("OrderId"));
+                    if (rsi.elementStream().count() > 1) {
+                        System.out.println("UN ORDER PEUT AVOIR PLUSIEURS INVOICES");
+                    }
+                    if (rsi.hasNext()) {
+                        System.out.println("LALALA");
+                        Optional<OVertex> optionali = rsi.next().getVertex();
+                        rsi.close();
+                        if (optionali.isPresent()) {
+                            OVertex invoice = optional.get();
+                            OEdge result = db.newEdge(order, invoice, db.getClass("HasInvoice"));
+                            result.setProperty("OrderId", (String) order.getProperty("OrderId"));
+                            result.save();
+                        }
+                    }
+                }
+            }
+        }
+        rs.close();
+         */
+
+
+    }
+
+    private static OVertex createProduct(ODatabaseSession db, String asin, String title, float price, String imgUrl) {
+        OVertex result = db.newVertex("Product");
+        result.setProperty("asin", asin);
+        result.setProperty("title", title);
+        result.setProperty("price", price);
+        result.setProperty("imgUrl", imgUrl);
+        result.save();
+        return result;
+    }
+
+    private static OVertex createOrder(ODatabaseSession db, String OrderId, String PersonId, String OrderDate, Double TotalPrice) {
+        OVertex result = db.newVertex("Order");
+        result.setProperty("OrderId", OrderId);
+        result.setProperty("PersonId", PersonId);
+        result.setProperty("OrderDate", OrderDate);
+        result.setProperty("TotalPrice", TotalPrice.floatValue());
+        result.save();
+        return result;
+    }
+
+    private static OEdge linkProductToBrand(ODatabaseSession db, String bname, String asin){
+        OEdge result = null;
+        String queryedge = "SELECT * from IsFromBrand where asin = ?";
+        OResultSet rse = db.query(queryedge, asin);
+        if(!rse.hasNext()) {
+            String query = "SELECT * from VendorVertex where Vendor = ?";
+            OResultSet rsb = db.query(query, bname);
+
+            if (rsb.hasNext()) {
+                Optional<OVertex> optional = rsb.next().getVertex();
+                rsb.close();
+                if (optional.isPresent()) {
+                    OVertex Brand = optional.get();
+
+                    query = "SELECT * from Product where asin = ?";
+                    OResultSet rsp = db.query(query, asin);
+                    if (rsp.hasNext()) {
+                        optional = rsp.next().getVertex();
+                        rsp.close();
+                        if (optional.isPresent()) {
+                            OVertex Product = optional.get();
+                            result = db.newEdge(Product, Brand, db.getClass("IsFromBrand"));
+                            result.setProperty("asin", asin);
+                            result.save();
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static OEdge linkOrderToProduct(ODatabaseSession db, OVertex order, String asin, String productId){
+        String query = "SELECT * from Product where asin = ?";
+        OResultSet rsp = db.query(query, asin);
+        OEdge result = null;
+        if(rsp.hasNext()){
+            Optional<OVertex> optional = rsp.next().getVertex();
+            rsp.close();
+            if(optional.isPresent()){
+                OVertex product = optional.get();
+                result = db.newEdge(order, product, db.getClass("Orderline"));
+                result.save();
+            }
+        }
+        return result;
+    }
+
+}
+
+
+/* RESULTATS 
+
+SELECT * FROM Product LIMIT 20
+
++----+------+-------+------+---------+---------+---------+---------+------------------------+------------------------+-----------------------+------------------------+
+|#   |@RID  |@CLASS |price |imgUrl   |asin     |out_IsFro|out_Produ|in_Feedback             |title                   |in_Orderline           |in_OrderlineInvoice     |
++----+------+-------+------+---------+---------+---------+---------+------------------------+------------------------+-----------------------+------------------------+
+|0   |#34:0 |Product|8.26  |209486...|209486...|[#52:929]|[#162:...|                        |5 LED Bicycle Rear Ta...|[#62:21238]            |                        |
+|1   |#34:1 |Product|50.44 |B0000A...|B0000A...|[#53:155]|[#163:...|                        |Shakespeare Two-Piece...|                       |                        |
+|2   |#34:2 |Product|22.86 |B0000C...|B0000C...|[#50:217]|[#164:...|                        |Fobus Standard Holste...|                       |                        |
+|3   |#34:3 |Product|4.96  |B00020...|B00020...|[#56:711]|[#165:...|                        |Fox 40 Classic Offici...|                       |                        |
+|4   |#34:4 |Product|11.04 |B0002I...|B0002I...|[#56:269]|[#166:...|                        |Hoppe's Gun Wipes Gun...|                       |                        |
+|5   |#34:5 |Product|9.75  |B00067...|B00067...|[#56:203]|[#167:...|                        |Slip 2000 Gun Lube 4o...|                       |                        |
+|6   |#34:6 |Product|12.49 |B00079...|B00079...|[#54:358]|[#168:...|                        |Yellow Hard Rubber Tr...|                       |                        |
+|7   |#34:7 |Product|49.98 |B0007X...|B0007X...|[#56:686]|[#169:...|                        |CAP Barbell Standard ...|[#64:28222]            |                        |
+|8   |#34:8 |Product|18.56 |B0009P...|B0009P...|[#52:730]|[#162:...|                        |Coleman Lantern Refle...|                       |                        |
+|9   |#34:9 |Product|52.99 |B000AB...|B000AB...|[#57:7]  |[#163:...|                        |Wald 535 Rear Twin Bi...|                       |                        |
+|10  |#34:10|Product|2.99  |B000AO...|B000AO...|[#57:1...|[#164:...|                        |Sunlite Bicycle Rim S...|                       |                        |
+|11  |#34:11|Product|144.13|B000AU...|B000AU...|[#56:312]|[#165:...|[#82:1041,#82:1042,#8...|Genesis Original Bow    |[#58:2261,#58:9996,#...|[#146:81,#146:8677,#1...|
+|12  |#34:12|Product|75.99 |B000BO...|B000BO...|[#53:757]|[#166:...|                        |The Step High Step      |[#62:32559,#60:1334,...|[#147:13610]            |
+|13  |#34:13|Product|21.19 |B000C1...|B000C1...|[#54:527]|[#167:...|                        |Sunlite Bottom Bracke...|                       |                        |
+|14  |#34:14|Product|8.52  |B000EA...|B000EA...|[#54:938]|[#168:...|                        |Mizuno Slider Kneepad   |                       |                        |
+|15  |#34:15|Product|12.17 |B000EZ...|B000EZ...|[#52:771]|[#169:...|                        |Plano 23731-01 Stowaw...|                       |                        |
+|16  |#34:16|Product|55.13 |B000FE...|B000FE...|[#54:22] |[#162:...|                        |Suunto MC-2/360/G/D/L...|[#59:70956,#61:62445]  |                        |
+|17  |#34:17|Product|129.99|B000FN...|B000FN...|[#51:646]|[#163:...|                        |Victorinox Swiss Army...|[#58:507,#58:525,#58...|[#146:68,#146:94,#146...|
+|18  |#34:18|Product|17.34 |B000GE...|B000GE...|[#54:1...|[#164:...|                        |Uncle Mike's Large Pi...|                       |                        |
+|19  |#34:19|Product|12.95 |B000H6...|B000H6...|[#56:814]|[#165:...|                        |Hogue Rubber Grip Tau...|                       |                        |
++----+------+-------+------+---------+---------+---------+---------+------------------------+------------------------+-----------------------+------------------------+
+
+20 item(s) found. Query executed in 0.066 sec(s).
+
+SELECT * FROM Order LIMIT 20
+
++----+------+------+----------+----------+--------------+--------------------+------------------------------------+----------------------------------------------+
+|#   |@RID  |@CLASS|TotalPrice|OrderDate |PersonId      |in_EdgeCustomerOrder|OrderId                             |out_Orderline                                 |
++----+------+------+----------+----------+--------------+--------------------+------------------------------------+----------------------------------------------+
+|0   |#42:0 |Order |723.88    |2022-09-01|10995116278711|[#157:748]          |016f6a4a-ec18-4885-b1c7-9bf2306c76d6|[#58:0,#61:10842,#64:21684,#59:32527,#62:43...|
+|1   |#42:1 |Order |1633.93   |2019-06-01|17592186044650|                    |88875b8d-7a16-4a4e-adc3-c3cf17433e87|[#64:54216,#59:65059,#61:75901,#58:5,#61:10...|
+|2   |#42:2 |Order |1892.09   |2024-08-01|19791209300458|                    |bf9a7e32-09f0-4a79-9785-8f96b033eaf2|[#63:54221,#58:65064,#60:75906,#65:9,#60:10...|
+|3   |#42:3 |Order |2397.12   |2018-10-02|19791209309920|[#155:906]          |e3883a24-47c6-4e82-b412-32cb44005783|[#64:14,#59:10857,#62:21699,#65:32541,#60:4...|
+|4   |#42:4 |Order |685.5     |2021-05-04|2199023261984 |                    |de53a402-1c90-4e30-ba1c-eefb55aa7f3d|[#62:54231,#65:65073,#59:75916,#64:19,#59:1...|
+|5   |#42:5 |Order |916.0     |2021-11-04|24189255819387|[#158:772]          |7e4eb9e5-dac8-47d7-8528-ad73ae4844f5|[#61:54236,#64:65078,#58:75921,#63:24,#58:1...|
+|6   |#42:6 |Order |1169.49   |2019-03-15|28587302327331|                    |9729a28a-2eb7-444f-8867-be943e166cf8|[#65:43398,#60:54241,#63:65083,#65:75925,#6...|
+|7   |#42:7 |Order |1593.18   |2020-06-24|32985348838628|                    |750898e5-e922-49d4-a8b1-af34f0edae80|[#59:54246,#62:65088,#64:75930,#61:34,#64:1...|
+|8   |#42:8 |Order |2441.96   |2018-04-24|4398046512678 |                    |bc000fbd-bdd5-494e-bc6a-1a4ce9351df2|[#60:39,#63:10881,#58:21724,#61:32566,#64:4...|
+|9   |#42:9 |Order |1425.58   |2023-08-06|6597069769666 |                    |87944a0a-c1a0-4d4b-a9c5-b8c80720e332|[#60:65098,#62:75940,#59:44,#62:10886,#65:2...|
+|10  |#42:10|Order |1536.72   |2019-07-05|8796093023175 |[#158:143]          |0d211298-74d3-4d20-a367-ba9df671b009|[#61:75945,#58:49,#61:10891,#64:21733,#59:3...|
+|11  |#42:11|Order |1252.75   |2020-02-10|8796093032213 |                    |496739af-c8ad-4a6f-b205-aca149c532c2|[#61:43423,#64:54265,#59:65108,#61:75950,#5...|
+|12  |#42:12|Order |1243.49   |2022-03-01|10995116278874|                    |3002a49a-eec2-478c-a3cf-a39e19081eeb|[#65:58,#60:10901,#63:21743,#58:32586,#61:4...|
+|13  |#42:13|Order |2034.34   |2020-07-17|13194139542643|[#155:529]          |c0198341-faf2-4f3c-97b0-b8cd12612be8|[#64:32590,#59:43433,#62:54275,#65:65117,#5...|
+|14  |#42:14|Order |872.52    |2018-06-09|17592186046593|[#158:900]          |fbb2623c-16f6-476e-a252-74f49b2a1fe7|[#63:32595,#58:43438,#61:54280,#64:65122,#5...|
+|15  |#42:15|Order |1886.85   |2020-10-16|17592186052442|                    |6a1a6d65-895c-4238-81b7-25f5e9307b47|[#63:65127,#65:75969,#62:73,#65:10915,#60:2...|
+|16  |#42:16|Order |2076.23   |2020-01-24|2199023264696 |                    |5689bff9-49a1-4f86-ad93-666348a74990|[#62:32605,#65:43447,#60:54290,#63:65132,#6...|
+|17  |#42:17|Order |1980.51   |2021-08-16|24189255813654|                    |b8d580b7-a257-4735-9e45-89de4c1fbb28|[#62:65137,#64:75979,#61:83,#64:10925,#59:2...|
+|18  |#42:18|Order |1655.01   |2023-10-06|26388279072674|                    |0cc1f612-e4a6-4060-b1d1-ac1d78790ccd|[#60:88,#63:10930,#58:21773,#61:32615,#64:4...|
+|19  |#42:19|Order |1704.8    |2022-03-17|30786325586482|[#161:785]          |571a442f-8fe1-46c3-a89f-3103dcaf6a44|[#59:93,#62:10935,#65:21777,#60:32620,#63:4...|
++----+------+------+----------+----------+--------------+--------------------+------------------------------------+----------------------------------------------+
+
+20 item(s) found. Query executed in 0.008 sec(s).
+
+SELECT * FROM IsFromBrand LIMIT 20
+
++----+------+-----------+-----+--------+
+|#   |@RID  |@CLASS     |in   |out     |
++----+------+-----------+-----+--------+
+|0   |#50:0 |IsFromBrand|#26:0|#34:1259|
+|1   |#50:1 |IsFromBrand|#26:0|#35:1236|
+|2   |#50:2 |IsFromBrand|#26:0|#40:1087|
+|3   |#50:3 |IsFromBrand|#27:0|#38:792 |
+|4   |#50:4 |IsFromBrand|#27:0|#40:1156|
+|5   |#50:5 |IsFromBrand|#28:0|#39:918 |
+|6   |#50:6 |IsFromBrand|#28:0|#36:991 |
+|7   |#50:7 |IsFromBrand|#28:0|#34:1181|
+|8   |#50:8 |IsFromBrand|#29:0|#37:207 |
+|9   |#50:9 |IsFromBrand|#29:0|#37:1103|
+|10  |#50:10|IsFromBrand|#30:0|#36:297 |
+|11  |#50:11|IsFromBrand|#30:0|#36:311 |
+|12  |#50:12|IsFromBrand|#31:0|#37:1196|
+|13  |#50:13|IsFromBrand|#31:0|#41:6   |
+|14  |#50:14|IsFromBrand|#31:0|#41:1065|
+|15  |#50:15|IsFromBrand|#32:0|#40:399 |
+|16  |#50:16|IsFromBrand|#32:0|#37:568 |
+|17  |#50:17|IsFromBrand|#33:0|#40:931 |
+|18  |#50:18|IsFromBrand|#33:0|#37:694 |
+|19  |#50:19|IsFromBrand|#26:1|#37:1239|
++----+------+-----------+-----+--------+
+
+20 item(s) found. Query executed in 0.029 sec(s).
+
+SELECT * FROM Orderline LIMIT 20
+
++----+------+---------+--------+------+
+|#   |@RID  |@CLASS   |in      |out   |
++----+------+---------+--------+------+
+|0   |#58:0 |Orderline|#38:133 |#42:0 |
+|1   |#58:1 |Orderline|#35:822 |#46:1 |
+|2   |#58:2 |Orderline|#38:1221|#43:3 |
+|3   |#58:3 |Orderline|#41:1216|#48:4 |
+|4   |#58:4 |Orderline|#38:354 |#45:6 |
+|5   |#58:5 |Orderline|#37:3   |#42:8 |
+|6   |#58:6 |Orderline|#37:1023|#47:9 |
+|7   |#58:7 |Orderline|#34:542 |#45:11|
+|8   |#58:8 |Orderline|#39:925 |#49:12|
+|9   |#58:9 |Orderline|#36:301 |#47:14|
+|10  |#58:10|Orderline|#41:745 |#44:16|
+|11  |#58:11|Orderline|#36:1198|#49:17|
+|12  |#58:12|Orderline|#38:762 |#46:19|
+|13  |#58:13|Orderline|#39:326 |#43:21|
+|14  |#58:14|Orderline|#41:4   |#48:22|
+|15  |#58:15|Orderline|#37:572 |#45:24|
+|16  |#58:16|Orderline|#37:326 |#42:26|
+|17  |#58:17|Orderline|#34:400 |#47:27|
+|18  |#58:18|Orderline|#34:749 |#44:29|
+|19  |#58:19|Orderline|#34:749 |#49:30|
++----+------+---------+--------+------+
+
+20 item(s) found. Query executed in 0.065 sec(s).
+
+*/

@@ -1,0 +1,127 @@
+// MIA SWERY 
+
+    /* --------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE -- */
+    /* --------------------------------------- */
+
+    public static void insertOneInvoice(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String orderId = (String) json.get("orderId");
+        String personId = (String) json.get("personId");
+        Date orderDate = (Date) json.get("orderDate");
+        float price = (float) json.get("price");
+        String asin = (String) json.get("asin");
+        String productId = (String) json.get("productId");
+
+        String query = "SELECT * from Invoice where Invoice = ?";
+        OResultSet rs = db.query(query, orderId);
+        if (!rs.elementStream().findFirst().isPresent()) {
+
+            OVertex invoice = createInvoice(db, orderId, personId, orderDate, price);
+            invoice.getEdges(ODirection.OUT);
+            linkInvoiceToProduct(db,invoice,asin,productId);
+            System.out.println("The invoice " + orderId + " has been inserted");
+        } else {
+            System.out.println("The invoice " + orderId + " is already present among the vendor vertices");
+        }
+    }
+
+
+    public static void updateOneInvoice(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String orderId = (String) json.get("orderId");
+        String personId = (String) json.get("personId");
+        Date orderDate = (Date) json.get("orderDate");
+        float price = (float) json.get("price");
+        //String asin = (String) json.get("asin");
+        //String productId = (String) json.get("productId");
+
+        String query = "SELECT * from Invoice where Invoice = ?";
+        OResultSet rs = db.query(query, orderId);
+        Optional invoiceRes = rs.elementStream().findFirst();
+        if (invoiceRes.isPresent()) {
+            OVertex invoiceVertex = (OVertex) invoiceRes.get();
+            if (invoiceVertex.getProperty("orderId") != orderId) {
+                invoiceVertex.setProperty("orderId", orderId);
+            }
+            if (invoiceVertex.getProperty("personId") != personId) {
+                invoiceVertex.setProperty("personId", personId);
+            }
+            if (invoiceVertex.getProperty("orderDate") != orderDate) {
+                invoiceVertex.setProperty("orderDate", orderDate);
+            }
+            if ((float) invoiceVertex.getProperty("price") != price) {
+                invoiceVertex.setProperty("price", price);
+            }
+            /*OVertex invoice = createInvoice(db, orderId, personId, orderDate, price);
+            for (OEdge e : invoiceVertex.getEdges(ODirection.OUT)) {
+                String asin = e.getVertex(ODirection.OUT).getProperty("asin");
+                linkInvoiceToProduct(db,invoice,asin,productId);
+                db.delete(e);
+            };
+            db.delete(invoiceVertex);
+            */
+            System.out.println("The invoice " + orderId + " has been updated");
+        } else {
+            System.out.println("The invoice " + orderId + " is not present");
+        }
+    }
+
+
+    public static void deleteOneInvoice(ODatabaseSession db, ODocument doc) {
+
+        ORecord r = doc.getRecord();
+        String s = r.toJSON();
+        JSONObject json = (JSONObject) JSONValue.parse(s);
+
+        String invoice = (String) json.get("Invoice");
+
+        String query = "SELECT * from Invoice where Invoice = ?";
+        OResultSet rs = db.query(query, invoice);
+        Optional invoiceRes = rs.elementStream().findFirst();
+        if (invoiceRes.isPresent()) {
+            db.delete((OVertex) invoiceRes.get());
+            System.out.println("The invoice " + invoice + " has been deleted");
+        } else {
+            System.out.println("The invoice " + invoice + " is already not present.");
+        }
+    }
+
+
+
+    /* ------------------------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE FOR MANY VALUES -- */
+    /* ------------------------------------------------------- */
+    public static void insertManyInvoice(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            insertOneInvoice(db, document);
+        }
+    }
+
+    public static void updateManyInvoice(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            updateOneInvoice(db, document);
+        }
+    }
+
+    public static void deleteManyInvoice(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            deleteOneInvoice(db, document);
+        }
+    }
+
+
+
+/* 
+
+RESULTATS
+
+ */

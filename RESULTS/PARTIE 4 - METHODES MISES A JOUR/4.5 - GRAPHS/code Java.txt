@@ -1,0 +1,74 @@
+// MOKHTAR SAMY
+
+ public void updatePost(ODocument post) {
+        String query = "SELECT * from Post where idPost = ?";
+        OResultSet rs = db.query(query, post.getProperty("idPost").toString());
+        Optional<OVertex> optionalPost = rs.vertexStream().findFirst();
+        OVertex newPost = optionalPost.get();
+
+        newPost.setProperty("browserUsed", post.getProperty("browserUsed"));
+        newPost.setProperty("content", post.getProperty("content"));
+        newPost.setProperty("creationDate", post.getProperty("creationDate"));
+        newPost.setProperty("imageFile", post.getProperty("imageFile"));
+        newPost.setProperty("length", post.getProperty("length"));
+        newPost.setProperty("locationIP", post.getProperty("locationIP"));
+        newPost.setProperty("language", post.getProperty("language"));
+        newPost.save();
+    }
+
+    public void deletePost(OVertex post) {
+        post.delete().save();
+    }
+
+    public void deletePost(String postID) {
+        String query = "SELECT * from Post where idPost = ?";
+        OResultSet rs = db.query(query, postID);
+        Optional<OVertex> optionalPost = rs.vertexStream().findFirst();
+        OVertex oldPost = optionalPost.get();
+        oldPost.delete().save();
+    }
+
+    public void updateTag(ODocument Tag) {
+        String query = "SELECT * from Tag where idTag = ?";
+        OResultSet rs = db.query(query, Tag.getProperty("idTag").toString());
+        Optional<OVertex> optionalTag = rs.vertexStream().findFirst();
+        OVertex newTag = optionalTag.get();
+
+        newTag.setProperty("name", Tag.getProperty("name"));
+        newTag.save();
+    }
+
+    public void updateHasTag(OVertex fromPost, OVertex toTag, OVertex newToTag, OVertex newFromPost) {
+        String query = "SELECT * from HasTag where in.idTag = ? and out.idPost = ?";
+
+        OResultSet rs = db.query(query, toTag.getProperty("idTag").toString(), fromPost.getProperty("idPost").toString());
+        Optional<OEdge> optionalhasTag = rs.edgeStream().findFirst();
+        OEdge hasTag = optionalhasTag.get();
+
+        if (newToTag != null) {
+            Iterable<OEdge> edges = hasTag.getTo().getEdges(ODirection.IN);
+
+            for (OEdge tag : edges) {
+                if (tag.getIdentity().equals(toTag.getIdentity())) {
+                    tag.delete();
+                }
+            }
+            hasTag.getFrom().addEdge(newToTag);
+        }
+
+        if (newFromPost != null) {
+            Iterable<OEdge> edges = hasTag.getTo().getEdges(ODirection.OUT);
+
+            for (OEdge post : edges) {
+                if (post.getIdentity().equals(toTag.getIdentity())) {
+                    post.delete();
+                }
+            }
+            hasTag.getTo().addEdge(newFromPost);
+        }
+        hasTag.save();
+    }
+
+/* 
+RESULTATS
+*/

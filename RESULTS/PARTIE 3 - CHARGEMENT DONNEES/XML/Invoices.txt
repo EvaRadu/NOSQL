@@ -1,26 +1,4 @@
-package xml;
-
-import com.orientechnologies.orient.core.db.ODatabaseSession;
-import com.orientechnologies.orient.core.db.OrientDB;
-import com.orientechnologies.orient.core.db.OrientDBConfig;
-import com.orientechnologies.orient.core.metadata.schema.OClass;
-import com.orientechnologies.orient.core.metadata.schema.OType;
-import com.orientechnologies.orient.core.record.ODirection;
-import com.orientechnologies.orient.core.record.OEdge;
-import com.orientechnologies.orient.core.record.ORecord;
-import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.record.impl.ODocument;
-import com.orientechnologies.orient.core.sql.executor.OResultSet;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.w3c.dom.*;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.*;
-import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
+// MIA SWERY
 
 public class InvoiceLoader {
     ODatabaseSession db;
@@ -95,16 +73,12 @@ public class InvoiceLoader {
                         Element eElementOL = (Element) node;
                         /*String productid = eElementOL.getElementsByTagName("productId").item(0).getTextContent();
                         System.out.println("Order line - product id: " + productid);
-
                         String asin = eElementOL.getElementsByTagName("asin").item(0).getTextContent();
                         //System.out.println("Order line - asin: " + asin);
-
                         String title = eElementOL.getElementsByTagName("title").item(0).getTextContent();
                         //System.out.println("Order line - title: " + title);
-
                         String price = eElementOL.getElementsByTagName("price").item(0).getTextContent();
                         //System.out.println("Order line - price: " + price);
-
                         String brand = eElementOL.getElementsByTagName("brand").item(0).getTextContent();
                         //System.out.println("Order line - brand: " + brand);
                         */
@@ -171,122 +145,68 @@ public class InvoiceLoader {
         }
         return result;
     }
-
-    /* --------------------------------------- */
-    /* -- METHODS INSERT, UPDATE AND DELETE -- */
-    /* --------------------------------------- */
-
-    public static void insertOneInvoice(ODatabaseSession db, ODocument doc) {
-
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String orderId = (String) json.get("orderId");
-        String personId = (String) json.get("personId");
-        Date orderDate = (Date) json.get("orderDate");
-        float price = (float) json.get("price");
-        String asin = (String) json.get("asin");
-        String productId = (String) json.get("productId");
-
-        String query = "SELECT * from Invoice where Invoice = ?";
-        OResultSet rs = db.query(query, orderId);
-        if (!rs.elementStream().findFirst().isPresent()) {
-
-            OVertex invoice = createInvoice(db, orderId, personId, orderDate, price);
-            invoice.getEdges(ODirection.OUT);
-            linkInvoiceToProduct(db,invoice,asin,productId);
-            System.out.println("The invoice " + orderId + " has been inserted");
-        } else {
-            System.out.println("The invoice " + orderId + " is already present among the vendor vertices");
-        }
-    }
-
-
-    public static void updateOneInvoice(ODatabaseSession db, ODocument doc) {
-
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String orderId = (String) json.get("orderId");
-        String personId = (String) json.get("personId");
-        Date orderDate = (Date) json.get("orderDate");
-        float price = (float) json.get("price");
-        //String asin = (String) json.get("asin");
-        //String productId = (String) json.get("productId");
-
-        String query = "SELECT * from Invoice where Invoice = ?";
-        OResultSet rs = db.query(query, orderId);
-        Optional invoiceRes = rs.elementStream().findFirst();
-        if (invoiceRes.isPresent()) {
-            OVertex invoiceVertex = (OVertex) invoiceRes.get();
-            if (invoiceVertex.getProperty("orderId") != orderId) {
-                invoiceVertex.setProperty("orderId", orderId);
-            }
-            if (invoiceVertex.getProperty("personId") != personId) {
-                invoiceVertex.setProperty("personId", personId);
-            }
-            if (invoiceVertex.getProperty("orderDate") != orderDate) {
-                invoiceVertex.setProperty("orderDate", orderDate);
-            }
-            if ((float) invoiceVertex.getProperty("price") != price) {
-                invoiceVertex.setProperty("price", price);
-            }
-            /*OVertex invoice = createInvoice(db, orderId, personId, orderDate, price);
-            for (OEdge e : invoiceVertex.getEdges(ODirection.OUT)) {
-                String asin = e.getVertex(ODirection.OUT).getProperty("asin");
-                linkInvoiceToProduct(db,invoice,asin,productId);
-                db.delete(e);
-            };
-            db.delete(invoiceVertex);
-            */
-            System.out.println("The invoice " + orderId + " has been updated");
-        } else {
-            System.out.println("The invoice " + orderId + " is not present");
-        }
-    }
-
-
-    public static void deleteOneInvoice(ODatabaseSession db, ODocument doc) {
-
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String invoice = (String) json.get("Invoice");
-
-        String query = "SELECT * from Invoice where Invoice = ?";
-        OResultSet rs = db.query(query, invoice);
-        Optional invoiceRes = rs.elementStream().findFirst();
-        if (invoiceRes.isPresent()) {
-            db.delete((OVertex) invoiceRes.get());
-            System.out.println("The invoice " + invoice + " has been deleted");
-        } else {
-            System.out.println("The invoice " + invoice + " is already not present.");
-        }
-    }
-
-
-
-    /* ------------------------------------------------------- */
-    /* -- METHODS INSERT, UPDATE AND DELETE FOR MANY VALUES -- */
-    /* ------------------------------------------------------- */
-    public static void insertManyInvoice(ODatabaseSession db, List<ODocument> docs){
-        for(ODocument document : docs){
-            insertOneInvoice(db, document);
-        }
-    }
-
-    public static void updateManyInvoice(ODatabaseSession db, List<ODocument> docs){
-        for(ODocument document : docs){
-            updateOneInvoice(db, document);
-        }
-    }
-
-    public static void deleteManyInvoice(ODatabaseSession db, List<ODocument> docs){
-        for(ODocument document : docs){
-            deleteOneInvoice(db, document);
-        }
-    }
 }
+
+/* RESULTATS 
+
+SELECT * FROM Invoice LIMIT 20
+
++----+-------+-------+--------------------+------------------------------------+-------+--------------+-------------------+
+|#   |@RID   |@CLASS |out_OrderlineInvoice|orderId                             |price  |personId      |orderDate          |
++----+-------+-------+--------------------+------------------------------------+-------+--------------+-------------------+
+|0   |#138:0 |Invoice|[#146:0]            |6711da51-dee6-452a-a7b8-f79a1cbb9436|723.88 |10995116278711|2022-09-01 00:00:00|
+|1   |#138:1 |Invoice|[#146:8]            |566584d0-2c1a-4853-afb8-8b33deb45c49|1633.93|17592186044650|2019-06-01 00:00:00|
+|2   |#138:2 |Invoice|[#146:16]           |bba7f68c-4169-469d-91b8-b6a11614ad10|1892.09|19791209300458|2024-08-01 00:00:00|
+|3   |#138:3 |Invoice|[#146:24]           |4261d92c-4921-46f9-9823-3a1e1262297f|2397.12|19791209309920|2018-10-02 00:00:00|
+|4   |#138:4 |Invoice|[#146:32]           |a6aa6d52-7388-4bd6-b3ed-4b80d9c3c1f6|685.5  |2199023261984 |2021-05-04 00:00:00|
+|5   |#138:5 |Invoice|[#146:40]           |2b51626e-85b4-417e-9e6f-08c76000ac12|916.0  |24189255819387|2021-11-04 00:00:00|
+|6   |#138:6 |Invoice|[#146:48]           |21199547-c7fb-477b-9736-637827bf8443|1169.49|28587302327331|2019-03-15 00:00:00|
+|7   |#138:7 |Invoice|[#146:56]           |6fc2d599-3335-44b0-b3b2-b58cfeae2e5e|1593.18|32985348838628|2020-06-24 00:00:00|
+|8   |#138:8 |Invoice|[#146:64]           |2b58a0e6-58ec-4cef-b0b0-12fe623568fa|2441.96|4398046512678 |2018-04-24 00:00:00|
+|9   |#138:9 |Invoice|[#146:72]           |954f5857-478a-4360-9334-4fcd675799c1|1425.58|6597069769666 |2023-08-06 00:00:00|
+|10  |#138:10|Invoice|[#146:80]           |1946154d-195f-49a9-a0fb-8f9547188b1c|1536.72|8796093023175 |2019-07-05 00:00:00|
+|11  |#138:11|Invoice|[#146:88]           |8ab4bc83-d15a-44fa-b778-ae7b67e94948|1252.75|8796093032213 |2020-02-10 00:00:00|
+|12  |#138:12|Invoice|[#146:96]           |ce123cb5-764d-4f34-93f3-342d41aaaa87|1243.49|10995116278874|2022-03-01 00:00:00|
+|13  |#138:13|Invoice|[#146:104]          |10db701e-364a-4b7f-ab19-0b84f2224dce|2034.34|13194139542643|2020-07-17 00:00:00|
+|14  |#138:14|Invoice|[#146:112]          |479a028e-7558-40e2-b693-628b9f5d4f4d|872.52 |17592186046593|2018-06-09 00:00:00|
+|15  |#138:15|Invoice|[#146:120]          |261d343d-6f75-4e21-8c58-a64475012f86|1886.85|17592186052442|2020-10-16 00:00:00|
+|16  |#138:16|Invoice|[#146:128]          |f4ad31ec-94de-4336-9a2a-282ab922ad9a|2076.23|2199023264696 |2020-01-24 00:00:00|
+|17  |#138:17|Invoice|[#146:136]          |1d97e01f-b64a-4921-9deb-14997a9cf342|1980.51|24189255813654|2021-08-16 00:00:00|
+|18  |#138:18|Invoice|[#146:144]          |948869a7-8c69-4ea1-85a4-5c3f42e409f4|1655.01|26388279072674|2023-10-06 00:00:00|
+|19  |#138:19|Invoice|[#146:152]          |83e77f80-7229-4758-8664-2f68b754de45|1704.8 |30786325586482|2022-03-17 00:00:00|
++----+-------+-------+--------------------+------------------------------------+-------+--------------+-------------------+
+
+20 item(s) found. Query executed in 0.051 sec(s).
+
+
+SELECT * FROM OrderlineInvoice LIMIT 20
+
++----+-------+----------------+--------+--------+
+|#   |@RID   |@CLASS          |in      |out     |
++----+-------+----------------+--------+--------+
+|0   |#146:0 |OrderlineInvoice|#38:133 |#138:0  |
+|1   |#146:1 |OrderlineInvoice|#40:493 |#138:8  |
+|2   |#146:2 |OrderlineInvoice|#35:791 |#138:16 |
+|3   |#146:3 |OrderlineInvoice|#34:542 |#138:24 |
+|4   |#146:4 |OrderlineInvoice|#36:735 |#138:32 |
+|5   |#146:5 |OrderlineInvoice|#36:452 |#138:40 |
+|6   |#146:6 |OrderlineInvoice|#35:267 |#138:48 |
+|7   |#146:7 |OrderlineInvoice|#38:140 |#138:56 |
+|8   |#146:8 |OrderlineInvoice|#34:675 |#138:64 |
+|9   |#146:9 |OrderlineInvoice|#39:282 |#138:72 |
+|10  |#146:10|OrderlineInvoice|#37:1064|#138:80 |
+|11  |#146:11|OrderlineInvoice|#36:507 |#138:88 |
+|12  |#146:12|OrderlineInvoice|#38:766 |#138:96 |
+|13  |#146:13|OrderlineInvoice|#39:402 |#138:104|
+|14  |#146:14|OrderlineInvoice|#34:610 |#138:112|
+|15  |#146:15|OrderlineInvoice|#38:213 |#138:120|
+|16  |#146:16|OrderlineInvoice|#34:542 |#138:128|
+|17  |#146:17|OrderlineInvoice|#37:828 |#138:136|
+|18  |#146:18|OrderlineInvoice|#39:616 |#138:144|
+|19  |#146:19|OrderlineInvoice|#40:1179|#138:152|
++----+-------+----------------+--------+--------+
+
+20 item(s) found. Query executed in 0.069 sec(s).
+
+*/
+

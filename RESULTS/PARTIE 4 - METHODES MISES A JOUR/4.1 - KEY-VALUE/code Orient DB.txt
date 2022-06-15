@@ -1,0 +1,121 @@
+// KHAOULA BHOULAL
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION D'UN FEEDBACK :
+INSERT INTO Feedback (productAsin,personID,comment) VALUES ("00","123","comment 1")
+
+// RESULTAT :
+Inserted record '[Feedback#82:18750{productAsin:00,personID:123,comment:comment 1} v1]' in 0.047000 sec(s).
+
+// VERIFICATION 
+SELECT * FROM Feedback WHERE productAsin="00"
+
++----+---------+--------+-----------+--------+---------+
+|#   |@RID     |@CLASS  |productAsin|personID|comment  |
++----+---------+--------+-----------+--------+---------+
+|0   |#82:18750|Feedback|00         |123     |comment 1|
++----+---------+--------+-----------+--------+---------+
+
+1 item(s) found. Query executed in 2.544 sec(s).
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// MODIFICATION D'UN FEEDBACK :
+UPDATE Feedback SET comment="comment 2" WHERE productAsin="00"
+
+// RESULTAT
+
+Updated record(s) '[{count:1}]' in 1.386000 sec(s).
+
+// VERIFICATION
+ SELECT * FROM Feedback WHERE productAsin="00"
+
++----+---------+--------+-----------+--------+---------+
+|#   |@RID     |@CLASS  |productAsin|personID|comment  |
++----+---------+--------+-----------+--------+---------+
+|0   |#82:18750|Feedback|00         |123     |comment 2|
++----+---------+--------+-----------+--------+---------+
+
+1 item(s) found. Query executed in 1.573 sec(s).
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION D'UN FEEDBACK :
+
+DELETE EDGE Feedback WHERE productAsin="00"
+
+// RESULTAT
+Delete record(s) '[{count:1}]' in 1.155000 sec(s).
+
+// VERIFICATION
+SELECT * FROM Feedback WHERE productAsin="00"
+
+0 item(s) found. Query executed in 1.321 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION DE PLUSIEURS FEEDBACKS :
+INSERT INTO Feedback (productAsin,personID,comment) VALUES ("00","123","comment 1"),("000","123","comment 2")
+
+// RESULTAT 
+
+Inserted record '[Feedback#83:18750{productAsin:00,personID:123,comment:comment 1} v1, Feedback#84:18750{productAsin:000,personID:123,comment:comment 2} v1]' in 0.024000 sec(s).
+
+// VERIFICATION 
+
+SELECT * FROM Feedback WHERE productAsin="00" or productAsin="000"
+
++----+---------+--------+-----------+--------+---------+
+|#   |@RID     |@CLASS  |productAsin|personID|comment  |
++----+---------+--------+-----------+--------+---------+
+|0   |#83:18750|Feedback|00         |123     |comment 1|
+|1   |#84:18750|Feedback|000        |123     |comment 2|
++----+---------+--------+-----------+--------+---------+
+
+2 item(s) found. Query executed in 1.45 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// UPDATE DE PLUSIEURS FEEDBACKS :
+
+UPDATE Feedback SET comment="comment 2" WHERE productAsin="00" or productAsin="000"
+
+
+// RESULTAT
+Updated record(s) '[{count:2}]' in 1.401000 sec(s).
+
+// VERIFICATION
+
+SELECT * FROM Feedback WHERE productAsin="00" or productAsin="000"
+
++----+---------+--------+-----------+--------+---------+
+|#   |@RID     |@CLASS  |productAsin|personID|comment  |
++----+---------+--------+-----------+--------+---------+
+|0   |#83:18750|Feedback|00         |123     |comment 2|
+|1   |#84:18750|Feedback|000        |123     |comment 2|
++----+---------+--------+-----------+--------+---------+
+
+2 item(s) found. Query executed in 1.477 sec(s).
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION DE PLUSIEURS FEEDBACKS :
+
+DELETE EDGE Feedback WHERE productAsin="00" or productAsin="000"
+
+// RESULTATS
+Delete record(s) '[{count:2}]' in 1.439000 sec(s).
+
+// VERIFICATION 
+SELECT * FROM Feedback WHERE productAsin="00" or productAsin="000"
+
+
+0 item(s) found. Query executed in 1.348 sec(s).
+
+
+
+
+
+
+
+
