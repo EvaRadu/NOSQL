@@ -296,7 +296,7 @@ public class GraphLoader {
         }
     }
 
-    private void createTag(String id, String name) {
+    public void createTag(String id, String name) {
         OVertex tag = db.newVertex("Tag");
         tag.setProperty("idTag", id);
         tag.setProperty("name", name);
