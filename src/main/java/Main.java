@@ -29,12 +29,6 @@ public class Main {
         bought the largest number of products, and return the tag which he/she has engaged the
         greatest times in the posts.
         */
-
-    /*
-    SELECT * FROM Customer where id = idChoisie;
-    SELECT * FROM Order where PersonId = idChoisie;
-    SELECT * FROM Invoice where personId = idChoisie;
-    */
     public static void query1(ODatabaseSession db, String id, Date date) throws ParseException {
 
         Calendar cal = Calendar.getInstance();
@@ -141,6 +135,27 @@ public class Main {
             }
             rsHasCreated.close();
         */
+
+        //RECUPERER LES PRODUITS ACHETES PAR UN UTILISATEUR
+        String queryMostProdTag = "SELECT asin from Product WHERE in(\"Orderline\").PersonId= ?";
+        OResultSet rsMPT = db.query(queryMostProdTag,id);
+        ArrayList<String> asins = new ArrayList<>();
+        while(rsMPT.hasNext()) {
+            OResult optional = rsMPT.next();
+            asins.addAll(optional.getProperty("asin"));
+        }
+        rsMPT.close();
+
+        String queryMostProdTag2 = "SELECT in.idTag as idTag, COUNT(in.idTag) as cptT from ProductTag where out.asin in ? group by in.idTag order by cptT DESC";
+        OResultSet rsMPT2 = db.query(queryMostProdTag,asins);
+        OResult optional = rsMPT2.next();
+        String idTag = optional.getProperty("idTag");
+        rsMPT2.close();
+        String subQuery = "SELECT name from TAG where idTag = ?";
+        OResult optional2 = rsMPT2.next();
+        String name = optional2.getProperty("name");
+        System.out.println("The tag of the most sold product is " + name);
+
 
         String queryTag = "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = 4145) GROUP BY idTag ORDER BY nbTags DESC";
         OResultSet rsTag = db.query(queryTag, id);
