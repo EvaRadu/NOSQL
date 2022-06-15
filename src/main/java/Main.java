@@ -1,11 +1,15 @@
+import com.orientechnologies.common.collection.OMultiCollectionIterator;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
+import com.orientechnologies.orient.core.db.record.OIdentifiable;
+import com.orientechnologies.orient.core.db.record.ridbag.ORidBag;
 import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.ODirection;
 import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
 import com.orientechnologies.orient.core.record.impl.ODocument;
+import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
 import graph.GraphLoader;
 import json.JsonsLoader;
@@ -17,7 +21,6 @@ import java.io.IOException;
 //import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -138,22 +141,148 @@ public class Main {
         }
     }
 
-    /* QUERY 2 :
+    
+    /*
+     QUERY 2 :
        For a given product during a given period, find the people who commented or
-       posted on it, and had bought it */
-    public void query2(String idProduct, Date beginningDate, Date endDate) {
+       posted on it, and had bought it
+     */
+    public static void query2(ODatabaseSession db, String idProduct, String startDate, String endDate) throws ParseException {
+
+        // GETTING THE ORDER DATES OF THE PRODUCT
+        String queryDate = "SELECT IN(\"Orderline\").OrderDate from Product where asin = ?";
+        OResultSet rsDate = db.query(queryDate, idProduct);
+        ArrayList<String> dateRes = new ArrayList<>();
+        while(rsDate.hasNext()) {
+            OResult optional = rsDate.next();
+            dateRes = optional.getProperty("IN(\"Orderline\").OrderDate");
+        }
+
+
+        // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT
+        String queryOrder = "SELECT IN(\"Orderline\").PersonId from Product where asin = ?";
+        OResultSet rsOrder = db.query(queryOrder, idProduct);
+        ArrayList<String> orderRes = new ArrayList<>();
+        while(rsOrder.hasNext()) {
+            OResult optional = rsOrder.next();
+            orderRes = optional.getProperty("IN(\"Orderline\").PersonId");
+        }
+
+        // GETTING THE CUSTOMERS WHO COMMENTED THE PRODUCT
+        String queryFeedback = "select personID from Feedback where productAsin= ?";
+        OResultSet rsFeedback = db.query(queryFeedback, idProduct);
+        ArrayList<String> feedbackRes = new ArrayList<>();
+        while(rsFeedback.hasNext()) {
+            OResult optional2 = rsFeedback.next();
+            feedbackRes.add(optional2.getProperty("personID").toString());
+        }
+
+        // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
+        ArrayList<String> finalOrderRes = new ArrayList<>();
+
+        for(int i = 0; i<=dateRes.size()-1;i++){
+            Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(dateRes.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(endDate));
+            Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(startDate).before( new SimpleDateFormat("yyyy-MM-dd").parse(dateRes.get(i))));
+            if(bool&&bool2){
+                finalOrderRes.add(orderRes.get(i));
+            }
+
+        }
+
+        // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
+        // AND HAD COMMENTED IT
+
+        ArrayList<String> finalRes = new ArrayList<>();
+        for(String s : feedbackRes){
+            if(finalOrderRes.contains(s)){
+                finalRes.add(s);
+            }
+        }
+
+
+        // FINAL RESULTS :
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("                 CUSTOMERS WHO GAVE A FEEDBACK ON THE PRODUCT :                ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : feedbackRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("           CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD :         ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : finalOrderRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("   CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD AND COMMENTED IT  ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : finalRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+        System.out.println("-------------------------------------------------------------------------------");
 
     }
 
-    public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
+    /*
+        Query 8 :
+         For all the products of a given category during a given year, compute its total sales
+         amount, and measure its popularity in the social media.
+    */
+    public static void query8(ODatabaseSession db) throws ParseException {
+        // GETTING THE ORDER DATES OF THE PRODUCT
+        String queryDate = "SELECT IN(\"Orderline\").OrderDate from Product";
+        OResultSet rsDate = db.query(queryDate);
+        ArrayList<String> dateRes = new ArrayList<>();
+        while(rsDate.hasNext()) {
+            OResult optional = rsDate.next();
+            dateRes = optional.getProperty("IN(\"Orderline\").OrderDate");
+        }
+        System.out.println(dateRes);
+    }
+
+
+
+
+
+
+        public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb2", "root", "2610");
+
+        /* -------------- */
+        /* -- PARTIE 5 -- */
+        /* -------------- */
+
+        // QUERY 1
+
+        /*
         long now = System.currentTimeMillis();
         Date sqlDate = new Date(now);
         Main.request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
         System.out.println("done!");
         db.close();
+         */
+
+
+        // QUERY 2
+        //query2(db,"B005FUKW6M","2018-12-18", "2021-01-18");
+
+
+            //QUERY 8
+            //query8(db);
+
 
 
         // LOADING THE PRODUCT DATA
@@ -254,14 +383,17 @@ public class Main {
         docsCustomer.add(docCustomer1);
         docsCustomer.add(docCustomer3);
 
+        /*
+        customerLoader.insertOneCustomer(db,docCustomer1);
+        customerLoader.updateOneCustomer(db,docCustomer2);
+        customerLoader.deleteOneCustomer(db,docCustomer2);
 
-        customerLoader.insertOneCustomer(db, docCustomer1);
-        customerLoader.updateOneCustomer(db, docCustomer2);
-        customerLoader.deleteOneCustomer(db, docCustomer2);
+        customerLoader.insertManyCustomers(db,docsCustomer);
+        customerLoader.updateManyCustomers(db,docsCustomer);
+        customerLoader.deleteManyCustomers(db,docsCustomer);
+        */
 
-        customerLoader.insertManyCustomers(db, docsCustomer);
-        customerLoader.updateManyCustomers(db, docsCustomer);
-        customerLoader.deleteManyCustomers(db, docsCustomer);
+
 
 
 
@@ -289,14 +421,16 @@ public class Main {
         docsVendor.add(docVendor2);
         docsVendor.add(docVendor3);
 
+        /*
+        vendorLoader.insertOneVendor(db,docVendor1);
+        vendorLoader.updateOneVendor(db,docVendor2);
+        vendorLoader.deleteOneVendor(db,docVendor3);
 
-        vendorLoader.insertOneVendor(db, docVendor1);
-        vendorLoader.updateOneVendor(db, docVendor2);
-        vendorLoader.deleteOneVendor(db, docVendor3);
+        vendorLoader.insertManyVendors(db,docsVendor);
+        vendorLoader.updateManyVendors(db,docsVendor);
+        vendorLoader.deleteManyVendors(db,docsVendor);
+         */
 
-        vendorLoader.insertManyVendors(db, docsVendor);
-        vendorLoader.updateManyVendors(db, docsVendor);
-        vendorLoader.deleteManyVendors(db, docsVendor);
 
 
         /*** 4.4 Graph ****/
@@ -323,6 +457,5 @@ public class Main {
     }
 
 
-    /** Query 4 **/
 
 }
