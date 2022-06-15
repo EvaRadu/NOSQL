@@ -21,6 +21,7 @@ import java.io.IOException;
 //import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Year;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -162,7 +163,7 @@ public class Main {
         ArrayList<String> dateRes = new ArrayList<>();
         while(rsDate.hasNext()) {
             OResult optional = rsDate.next();
-            dateRes = optional.getProperty("IN(\"Orderline\").OrderDate");
+            dateRes.addAll(optional.getProperty("IN(\"Orderline\").OrderDate"));
         }
 
 
@@ -172,7 +173,7 @@ public class Main {
         ArrayList<String> orderRes = new ArrayList<>();
         while(rsOrder.hasNext()) {
             OResult optional = rsOrder.next();
-            orderRes = optional.getProperty("IN(\"Orderline\").PersonId");
+            orderRes.addAll(optional.getProperty("IN(\"Orderline\").PersonId"));
         }
 
         // GETTING THE CUSTOMERS WHO COMMENTED THE PRODUCT
@@ -301,16 +302,34 @@ public class Main {
          For all the products of a given category during a given year, compute its total sales
          amount, and measure its popularity in the social media.
     */
-    public static void query8(ODatabaseSession db) throws ParseException {
-        // GETTING THE ORDER DATES OF THE PRODUCT
-        String queryDate = "SELECT IN(\"Orderline\").OrderDate from Product";
-        OResultSet rsDate = db.query(queryDate);
-        ArrayList<String> dateRes = new ArrayList<>();
-        while(rsDate.hasNext()) {
-            OResult optional = rsDate.next();
-            dateRes = optional.getProperty("IN(\"Orderline\").OrderDate");
+    public static void query8(ODatabaseSession db, String year) throws ParseException {
+
+        String queryDate = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
+        OResultSet rs = db.query(queryDate);
+
+        while(rs.hasNext()) {
+            OResult optional = rs.next();
+            ArrayList<String> currentDates = optional.getProperty("IN(\"Orderline\").OrderDate");
+            ArrayList<Float> currentAmounts = optional.getProperty("IN(\"Orderline\").TotalPrice");
+            ArrayList<Float> resAmounts = new ArrayList<>();
+            float totalSales = 0;
+
+            if(!currentDates.isEmpty()){
+
+                for(int i = 0; i<currentDates.size(); i++){
+                    Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(year+"-12-31"));
+                    Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(year+"-01-01").before( new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))));
+                    if(bool&&bool2) { // FILTERING THE DATES
+                        resAmounts.add(currentAmounts.get(i));
+                    }
+                }
+                for(Float money : resAmounts){
+                    totalSales = totalSales + money;
+                }
+
+                System.out.println("TOTAL SALES AMOUT FOR PRODUCT n° " + optional.getProperty("asin") + " DURING " + year + " = " + totalSales);
+            }
         }
-        System.out.println(dateRes);
     }
 
 
@@ -341,7 +360,7 @@ public class Main {
 
 
             //QUERY 8
-            //query8(db);
+            query8(db,"2018");
 
 
 
