@@ -345,7 +345,6 @@ public class Main {
         db.close();
 
 
-
         // QUERY 2
         //query2(db,"B005FUKW6M","2018-12-18", "2021-01-18");
 
@@ -531,6 +530,6 @@ public class Main {
         /** Query 4 **/
 
        // graphLoader.query4();
-        graphLoader.query4();
+       // graphLoader.query4();
     }
 }

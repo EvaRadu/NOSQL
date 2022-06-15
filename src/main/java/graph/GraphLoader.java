@@ -9,6 +9,7 @@ import com.orientechnologies.orient.core.record.*;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
+import com.orientechnologies.orient.core.sql.parser.ORid;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -552,7 +553,6 @@ public class GraphLoader {
          each person, traverse her knows-graph with 3-hop to find the friends, and finally return the
          common friends of these two persons.
          * */
-
         String query = "SELECT PersonId FROM (SELECT PersonId, SUM(TotalPrice) as amountSpent FROM Order GROUP BY PersonId ORDER BY amountSpent DESC LIMIT 2)";
         OResultSet rs = db.query(query);
         ArrayList<String> listCustomers = new ArrayList<>();
@@ -562,11 +562,21 @@ public class GraphLoader {
             String sql = "SELECT intersect((TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ? ) MAXDEPTH 3)," +
                     "(TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3))";
 
-        System.out.println(listCustomers.get(0));
         OResultSet result = db.query(sql, listCustomers.get(0), listCustomers.get(1));
-        //String resultQuery4 = result.stream().findFirst().get().toElement();
 
-        //String sql1 =  "TRAVERSE out(\"Knows\") FROM (select from Customer where PersonId= ? ) while $depth <= 3 STRATEGY BREADTH_FIRST";
-           //String sql2 =  "TRAVERSE out(\"Knows\") FROM (select from Customer where PersonId= ?) while $depth <= 3 STRATEGY BREADTH_FIRST)";
+        ArrayList<String> customers = new ArrayList<>();
+        while(result.hasNext()) {
+            String customersOridsString = result.next().getProperty("intersect(($$$SUBQUERY$$_0), ($$$SUBQUERY$$_1))").toString();
+            customersOridsString = customersOridsString.replace("[", "");
+            customersOridsString = customersOridsString.replace("]", "");
+            String[] customersOrids  = customersOridsString.split(",");
+
+            for(String orid : customersOrids)
+            {
+                String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+                OResultSet firstLastName = db.query(query5, orid);
+                System.out.println(firstLastName.stream().findFirst().get());
+            }
+        }
     }
 }
