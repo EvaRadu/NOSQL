@@ -1,0 +1,66 @@
+ //Khaoula Bouhlal
+
+-Nous utilisons d'abord la fonction Traverse fournie par Orientdb pour traverser le graphe.
+
+-Ensuite nous regardons leurs commandes s'ils ont acheté un produit ayant la catégorie donnée passée en paramètres.
+
+-Ensuite, nous sauvegardons la liste des produits dont nous savons qu'ils ont cette catégorie donnée et qu'ils ont été achetés par eux, puis nous obtenons les commentaires de tous les clients dans leurs commentaires.
+
+/* Query 5 :
+Given a start customer and a product category, find persons who are this customer's
+friends within 3-hop friendships in Knows graph, besides, they have bought products in the
+given category. Finally, return feedback with the 5-rating review of those bought products.
+*/
+
+    public static void query5(ODatabaseSession db, String idTag, String idCustomer) {
+        String query1 = "TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3";
+        OResultSet rs = db.query(query1, idCustomer);
+
+        ArrayList<List> listProducts = new ArrayList<>();
+        ArrayList<String> listIdTags = new ArrayList<>();
+        ArrayList<OVertex> listCustomersBought = new ArrayList<>();
+        ArrayList<String> listFeedback = new ArrayList<>();
+
+        int i = 0;
+        while (rs.hasNext()) {
+            OVertex prochainCustomer = rs.next().getVertex().get();
+            String query2 = "SELECT tags.idTag FROM (SELECT OUT(\"Orderline\").OUT(\"ProductTag\") as tags FROM Order WHERE PersonId = ? )";
+            OResultSet rs2 = db.query(query2, prochainCustomer.getProperty("id").toString());
+
+            while(rs2.hasNext()){
+                listIdTags.addAll(rs2.next().getProperty("tags.idTag"));
+                if(listIdTags.contains(idTag)){
+                    String query3 = "SELECT OUT(\"Orderline\").asin as produits FROM Order WHERE PersonId = ?";
+                    OResultSet rs3 = db.query(query3, prochainCustomer.getProperty("id").toString());
+                    while(rs3.hasNext()){
+                        listProducts.add(rs3.next().getProperty("produits"));
+                    }
+                    listCustomersBought.add(prochainCustomer);
+                }
+            }
+            if (i == 5){
+                break;
+            }
+            i = i+1;
+        }
+
+        for (List produitAsin: listProducts) {
+
+            String query4 = "SELECT comment FROM Feedback WHERE productAsin = ?";
+            OResultSet rs4 = db.query(query4, produitAsin.get(0));
+
+            while (rs4.hasNext()){
+                listFeedback.add(rs4.next().toString());
+            }
+        }
+
+        List<OVertex> resultListCustomers = listCustomersBought.stream().distinct().toList();
+        for (OVertex customer: resultListCustomers) {
+            System.out.println(customer.getProperty("firstName").toString() +" "+ customer.getProperty("lastName").toString());
+        }
+
+        List<String> listFeedbackResult = listFeedback.subList(0,10);
+        for (String comment: listFeedbackResult) {
+            System.out.println(comment);
+        }
+    }
