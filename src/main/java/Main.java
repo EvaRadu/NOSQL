@@ -411,9 +411,9 @@ public class Main {
         // QUERY 1
 
 
-        request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
-        System.out.println("done!");
-        db.close();
+        //request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
+        //System.out.println("done!");
+        //db.close();
 
 
         // QUERY 2
@@ -421,7 +421,7 @@ public class Main {
 
 
             //QUERY 8
-            query8(db,"2018");
+          //  query8(db,"2018");
 
 
 
@@ -601,9 +601,24 @@ public class Main {
         /** Query 4 **/
 
        // graphLoader.query4();
-       // graphLoader.query4();
+
+            /** Query 6 **/
+
+            /*
+            OVertex customer1 = null;
+            OVertex customer2 = null;
+                String query = "SELECT * FROM Customer LIMIT 20";
+                OResultSet rs = db.query(query);
+                List<OVertex> customersList = rs.vertexStream().toList();
+                customer1 = customersList.get(0);
+                customer2 = customersList.get(7);
+                rs.close();
+
+            graphLoader.query6(customer1, customer2);
+            */
     }
-    * Query 5 :
+
+    /* Query 5 :
     Given a start customer and a product category, find persons who are this customer's
     friends within 3-hop friendships in Knows graph, besides, they have bought products in the
     given category. Finally, return feedback with the 5-rating review of those bought products.
