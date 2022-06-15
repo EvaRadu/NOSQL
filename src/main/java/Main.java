@@ -2,28 +2,19 @@ import com.orientechnologies.common.collection.OMultiCollectionIterator;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
-import com.orientechnologies.orient.core.db.record.OIdentifiable;
-import com.orientechnologies.orient.core.db.record.ridbag.ORidBag;
-import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.ODirection;
 import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
-import graph.GraphLoader;
-import json.JsonsLoader;
 import org.xml.sax.SAXException;
 import relational.CustomerLoader;
 import relational.VendorLoader;
 import xml.InvoiceLoader;
-
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-//import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Year;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +29,13 @@ public class Main {
         bought the largest number of products, and return the tag which he/she has engaged the
         greatest times in the posts.
         */
-    public static void request1(ODatabaseSession db, String id, Date date) throws ParseException {
+
+    /*
+    SELECT * FROM Customer where id = idChoisie;
+    SELECT * FROM Order where PersonId = idChoisie;
+    SELECT * FROM Invoice where personId = idChoisie;
+    */
+    public static void query1(ODatabaseSession db, String id, Date date) throws ParseException {
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -336,6 +333,150 @@ public class Main {
         return res;
     }
 
+    /*
+    Query 9. Find top-3 companies who have the largest amount of sales at one country, for each
+    company, compare the number of the male and female customers, and return the most recent
+    posts of them.
+    */
+    public static void query9(ODatabaseSession db, String Country) throws ParseException {
+
+
+        //RECUPERER TOP3 MARQUES
+        String queryC = "Select out(\"IsFromBrand\").Vendor as brands, COUNT(*) as nbSells from Product where out(\"IsFromBrand\").Country = ? GROUP BY brands ORDER BY nbSells DESC";
+        OResultSet rsC = db.query(queryC, Country);
+        System.out.println("\n========= BRANDS =========");
+        int j= 0;
+
+        ArrayList<String> brands = new ArrayList<>();
+        while(rsC.hasNext() && j < 3) {
+            OResult optional = rsC.next();
+            brands.addAll(optional.getProperty("brands"));
+            j++;
+        }
+        rsC.close();
+        System.out.println(brands);
+
+        //RECUPERER LES ID DES PERSONNES PAR MARQUE
+        String queryB1 = "select out.PersonId as PersonId from Orderline where in.asin in (select asin from Product WHERE OUT(\"IsFromBrand\").Vendor = ?)";
+        OResultSet rsB1 = db.query(queryB1, brands.get(0));
+        System.out.println("\n========= PERSONS =========");
+        ArrayList<String> customersB1 = new ArrayList<>();
+
+        while(rsB1.hasNext()) {
+            OResult optional = rsB1.next();
+            String personId = optional.getProperty("PersonId");
+            customersB1.add(personId);
+
+            String subQuery = "SELECT out.idPost, out.content, out.creationDate from HASCREATED where idPerson = ? order by out.creationDate DESC";
+            System.out.println("\n========= LAST POST =========");
+            OResultSet res = db.query(subQuery,personId);
+            if (res.hasNext()) {
+                System.out.println("Last post of customer " + personId + ":");
+                System.out.println(res.stream().findFirst().get());
+            }
+        }
+        rsB1.close();
+        System.out.println("done : \n" + customersB1);
+
+
+        System.out.println("\n========= PERSONS =========");
+        Map dictB1 = new HashMap<String,Long>();
+        System.out.println(customersB1);
+        String q1 = "SELECT COUNT(gender) as cptG, gender from Customer where id in ? group by gender order by cptG DESC";
+        OResultSet r1 = db.query(q1, customersB1);
+        while (r1.hasNext()) {
+            OResult optional = r1.next();
+            dictB1.put((String) optional.getProperty("gender"),(Long) optional.getProperty("cptG") );
+        }
+        if ((long) dictB1.get("male") > (long) dictB1.get("female")){
+            System.out.println("There are more male customers (" + dictB1.get("male") + ") than female ones (" + dictB1.get("female") + ")");
+        }
+        else if ((long) dictB1.get("male") < (long) dictB1.get("female")){
+            System.out.println("There are more female customers (" + dictB1.get("female") + ") than male ones (" + dictB1.get("male") + ")");
+        } else {
+            System.out.println("There is as much male customers as female ones (" + dictB1.get("male") + ")");
+        }
+
+
+        if (j>=2) {
+            String queryB2 = "select out.PersonId as PersonId from Orderline where in.asin in (select asin from Product WHERE OUT(\"IsFromBrand\").Vendor = ?)";
+            OResultSet rsB2 = db.query(queryB1, brands.get(1));
+            System.out.println("\n========= CUSTOMERS BY BRAND =========");
+            ArrayList<String> personsB2 = new ArrayList<>();
+            while (rsB2.hasNext()) {
+                OResult optional = rsB2.next();
+                String personId = (String) optional.getProperty("PersonId");
+                personsB2.add(personId);
+
+                String subQuery = "SELECT out.idPost, out.content, out.creationDate from HASCREATED where idPerson = ? order by out.creationDate DESC";
+                System.out.println("\n========= LAST POST =========");
+                OResultSet res = db.query(subQuery,personId);
+                if (res.hasNext()) {
+                    System.out.println("Last post of customer " + personId + ":");
+                    System.out.println(res.stream().findFirst().get());
+                }
+            }
+            rsB2.close();
+
+            System.out.println("\n========= PERSONS =========");
+            Map dictB2 = new HashMap<String,Long>();
+            System.out.println(customersB1);
+            String q2 = "SELECT COUNT(gender) as cptG, gender from Customer where id in ? group by gender order by cptG DESC";
+            OResultSet r2 = db.query(q2, customersB1);
+            while (r2.hasNext()) {
+                OResult optional = r2.next();
+                dictB2.put((String) optional.getProperty("gender"),(Long) optional.getProperty("cptG") );
+            }
+            if ((long) dictB2.get("male") > (long) dictB2.get("female")){
+                System.out.println("There are more male customers (" + dictB2.get("male") + ") than female ones (" + dictB2.get("female") + ")");
+            }
+            else if ((long) dictB1.get("male") < (long) dictB2.get("female")){
+                System.out.println("There are more female customers (" + dictB2.get("female") + ") than male ones (" + dictB2.get("male") + ")");
+            } else {
+                System.out.println("There is as much male customers as female ones (" + dictB2.get("male") + ")");
+            }
+        }
+
+        if (j==3) {
+            String queryB3 = "select out.PersonId as PersonId from Orderline where in.asin in (select asin from Product WHERE OUT(\"IsFromBrand\").Vendor = ?";
+            OResultSet rsB3 = db.query(queryB1, brands.get(2));
+            System.out.println("\n========= CUSTOMERS BY BRAND =========");
+            ArrayList<String> personsB3 = new ArrayList<>();
+            while (rsB3.hasNext()) {
+                OResult optional = rsB3.next();
+                String personId = optional.getProperty("PersonId");
+                personsB3.add(optional.getProperty("PersonId"));
+
+                String subQuery = "SELECT out.idPost, out.content, out.creationDate from HASCREATED where idPerson = ? order by out.creationDate DESC";
+                System.out.println("\n========= LAST POST =========");
+                OResultSet res = db.query(subQuery,personId);
+                if (res.hasNext()) {
+                    System.out.println("Last post of customer " + personId + ":");
+                    System.out.println(res.stream().findFirst().get());
+                }
+            }
+            rsB3.close();
+
+            System.out.println("\n========= PERSONS =========");
+            Map dictB3 = new HashMap<String,Long>();
+            System.out.println(customersB1);
+            String q3 = "SELECT COUNT(gender) as cptG, gender from Customer where id in ? group by gender order by cptG DESC";
+            OResultSet r3 = db.query(q3, customersB1);
+            while (r3.hasNext()) {
+                OResult optional = r3.next();
+                dictB3.put((String) optional.getProperty("gender"),(Long) optional.getProperty("cptG") );
+            }
+            if ((long) dictB3.get("male") > (long) dictB3.get("female")){
+                System.out.println("There are more male customers (" + dictB3.get("male") + ") than female ones (" + dictB3.get("female") + ")");
+            }
+            else if ((long) dictB1.get("male") < (long) dictB3.get("female")){
+                System.out.println("There are more female customers (" + dictB3.get("female") + ") than male ones (" + dictB3.get("male") + ")");
+            } else {
+                System.out.println("There is as much male customers as female ones (" + dictB3.get("male") + ")");
+            }
+        }
+    }
+
     public static void query4(ODatabaseSession db) {
         /**
          * Query 4. Find the top-2 persons who spend the highest amount of money in orders. Then for
@@ -558,7 +699,6 @@ given category. Finally, return feedback with the 5-rating review of those bough
         return res;
     }
 
-
     /*
         Query 8 :
          For all the products of a given category during a given year, compute its total sales
@@ -641,10 +781,11 @@ given category. Finally, return feedback with the 5-rating review of those bough
 
         // QUERY 1
 
+        /*query1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
+        System.out.println("done!");
+        db.close();
+        */
 
-        //request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
-        //System.out.println("done!");
-        //db.close();
 
 
         // QUERY 2
@@ -654,7 +795,10 @@ given category. Finally, return feedback with the 5-rating review of those bough
 
           //QUERY 8
           //  query8(db,"2018");
-        // QUERY 4
+
+            //QUERY 9
+            query9(db, "Australia");
+
 
         // graphLoader.query4();
         // graphLoader.query4();

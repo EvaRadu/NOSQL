@@ -1,5 +1,26 @@
 // EVA RADU
 
+// EXPLICATION :
+/*
+J'ai effectué les étapes suivantes :
+  - Récupération des dates des orders du produit passé en paramètre
+  - Récupération des clients ayant commandé le produit passé en paramètre
+  - Récupération des clients ayant commenté le produit passé en paramètre
+  - Récupération des tags en rapport avec le produit passé en paramètre
+  - Récupération des postes en rapport avec les tags du produit
+  - Récupération des clients ayant poster quelque chose en rapport avec un tag du produit
+Puis :
+  - Filtrage des dates pour récupérer seulement les données correspondantes à la bonne périod
+  - Séléction des clients ayant commenté ou posté par rapport au produit ET qui l'on acheté
+
+/!\ A NOTER :
+  - A noté que je n'ai pas trouvé de produit que les clients ont acheté ET qu'ils ont commenté ou posté
+  - C'est pour cela que le résultat final est vide (==> l'intersection est vide)
+  - Mais toutes les autres requêtes renvoient bien quelque chose de correcte.
+*/
+
+// CODE :
+
  /*
      QUERY 2 :
        For a given product during a given period, find the people who commented or
@@ -62,8 +83,6 @@
                 customerPostRes.addAll(rsCustomerPost.next().getProperty("OUT(\"HasCreated\").id"));
             }
         }
-
-
 
 
         // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL

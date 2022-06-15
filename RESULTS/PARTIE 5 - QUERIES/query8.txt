@@ -1,5 +1,29 @@
 // EVA RADU
 
+// EXPLICATION :
+/*
+J'ai effectué les étapes suivantes :
+  - Récupération des produits qui ont été commandé pendant l'année passée en paramètre
+  - Et une fois ces données récupérées, je n'ai extrait que les produits de la catégorie passée en paramètre
+  - Et j'ai également récupérer les posts associés à ces produits
+
+Puis :
+  - J'ai calculé la somme des prix des commandes pour ces produits pour obtenir l'amont total des ventes
+  - Pour calculer la popularité sur les réseaux sociaux, j'ai calculé le nombre de posts pour chacun de ses produits
+
+/!\ A NOTER :
+  - J'ai considéré qu'une "Category" correspond à un Tag
+  - Lors du chargement de donnée, nous n'avons décidé de n'associer que
+    3 tags par produit afin de gagner du temps
+
+     ==> C'est pour cela que la popularité de chaque produit (ie. nombre de post)
+         est toujours égal à 3.
+*/
+
+
+
+// CODE :
+
  /*
         Query 8 :
          For all the products of a given category during a given year, compute its total sales
