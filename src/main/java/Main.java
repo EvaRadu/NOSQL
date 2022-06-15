@@ -287,6 +287,77 @@ public class Main {
         return res;
     }
 
+    // We get the ratio of negative reviews for the Products of the given Vendor where the sales
+    // of the Product have been declining for the last quarter
+    public static HashMap<String, Float> query7(ODatabaseSession db, String vendor){
+        HashMap<String, Float> res = new HashMap<>();
+        ArrayList<OVertex> declining_products = new ArrayList<>();
+
+        // We get the products of the vendor
+        String query = "SELECT * from Product where out(\"IsFromBrand\").Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+
+        while(rs.hasNext()){
+
+            Optional<OVertex> product = rs.next().getVertex();
+            if(product.isPresent()){
+
+                // We check if that product has declining sales
+                query = "SELECT * from Orderline where in.asin = ? and out.OrderDate between ? and ?";
+                OResultSet rs2 = db.query(query, (String)product.get().getProperty("asin"), "2021-06-15", "2022-06-15");
+                long current_sales = rs2.stream().count();
+
+                query = "SELECT * from Orderline where in.asin = ? and out.OrderDate between ? and ?";
+                rs2 = db.query(query, (String)product.get().getProperty("asin"), "2020-06-15", "2021-06-15");
+                long last_sales = rs2.stream().count();
+
+                if(current_sales < last_sales){
+                    declining_products.add(product.get());
+                }
+                rs2.close();
+            }
+        }
+        rs.close();
+
+        // We now get the Feedbacks  of these Products
+        ArrayList<OVertex> feedbacks = new ArrayList<>();
+        for(OVertex p :declining_products){
+            float neg = 0;
+            float pos = 0;
+            query = "select * from Feedback where productAsin = ?";
+            OResultSet rs3 = db.query(query, (String)p.getProperty("asin"));
+            while(rs3.hasNext()) {
+                Optional<OVertex> fo = rs3.next().getVertex();
+                if (fo.isPresent()) {
+                    OVertex f = fo.get();
+                    String text = (String) f.getProperty("comment");
+                    // We need to parse the grading in the comment ex: "4.5,blablabla"
+                    String grade = "";
+                    int cpt = 1;
+                    while (text.charAt(cpt) != ",".charAt(0)) {
+                        grade = grade + text.charAt(cpt);
+                        cpt++;
+                    }
+                    float sentiment = Float.parseFloat(grade);
+                    // We keep the comment if the grading is bad
+                    if (sentiment < 2.5) {
+                        neg++;
+                    } else {
+                        pos++;
+                    }
+                }
+                rs3.close();
+            }
+            if(pos+neg == 0){
+                res.put(p.getProperty("asin"), neg);
+            } else {
+                res.put(p.getProperty("asin"), (pos + neg) / neg);
+            }
+        }
+
+        return res;
+    }
+
 
     /*
         Query 8 :
@@ -531,5 +602,62 @@ public class Main {
 
        // graphLoader.query4();
        // graphLoader.query4();
+    }
+    * Query 5 :
+    Given a start customer and a product category, find persons who are this customer's
+    friends within 3-hop friendships in Knows graph, besides, they have bought products in the
+    given category. Finally, return feedback with the 5-rating review of those bought products.
+            */
+    public static void query5(ODatabaseSession db, String idTag, String idCustomer) {
+        String query1 = "TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3";
+        OResultSet rs = db.query(query1, idCustomer);
+
+        ArrayList<List> listProducts = new ArrayList<>();
+        ArrayList<String> listIdTags = new ArrayList<>();
+        ArrayList<OVertex> listCustomersBought = new ArrayList<>();
+        ArrayList<String> listFeedback = new ArrayList<>();
+
+        int i = 0;
+        while (rs.hasNext()) {
+            OVertex prochainCustomer = rs.next().getVertex().get();
+            String query2 = "SELECT tags.idTag FROM (SELECT OUT(\"Orderline\").OUT(\"ProductTag\") as tags FROM Order WHERE PersonId = ? )";
+            OResultSet rs2 = db.query(query2, prochainCustomer.getProperty("id").toString());
+
+            while(rs2.hasNext()){
+                listIdTags.addAll(rs2.next().getProperty("tags.idTag"));
+                if(listIdTags.contains(idTag)){
+                    String query3 = "SELECT OUT(\"Orderline\").asin as produits FROM Order WHERE PersonId = ?";
+                    OResultSet rs3 = db.query(query3, prochainCustomer.getProperty("id").toString());
+                    while(rs3.hasNext()){
+                        listProducts.add(rs3.next().getProperty("produits"));
+                    }
+                    listCustomersBought.add(prochainCustomer);
+                }
+            }
+            if (i == 5){
+                break;
+            }
+            i = i+1;
+        }
+
+        for (List produitAsin: listProducts) {
+
+            String query4 = "SELECT comment FROM Feedback WHERE productAsin = ?";
+            OResultSet rs4 = db.query(query4, produitAsin.get(0));
+
+            while (rs4.hasNext()){
+                listFeedback.add(rs4.next().toString());
+            }
+        }
+
+        List<OVertex> resultListCustomers = listCustomersBought.stream().distinct().toList();
+        for (OVertex customer: resultListCustomers) {
+            System.out.println(customer.getProperty("firstName").toString() +" "+ customer.getProperty("lastName").toString());
+        }
+
+        List<String> listFeedbackResult = listFeedback.subList(0,10);
+        for (String comment: listFeedbackResult) {
+            System.out.println(comment);
+        }
     }
 }
