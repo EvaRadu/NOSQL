@@ -15,12 +15,14 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GraphLoader {
 
     ODatabaseSession db;
 
-    public GraphLoader(ODatabaseSession db){
+    public GraphLoader(ODatabaseSession db) {
         this.db = db;
     }
 
@@ -66,28 +68,28 @@ public class GraphLoader {
             knows.createProperty("idPerson", OType.STRING);
             knows.createProperty("idPerson2", OType.STRING);
             knows.createProperty("creationDate", OType.DATE);
-            knows.createIndex("knows_index", OClass.INDEX_TYPE.NOTUNIQUE,"idPerson","idPerson2");
+            knows.createIndex("knows_index", OClass.INDEX_TYPE.NOTUNIQUE, "idPerson", "idPerson2");
         }
 
         if (db.getClass("HasTag") == null) {
             OClass hasTag = db.createEdgeClass("HasTag");
             hasTag.createProperty("idPost", OType.STRING);
             hasTag.createProperty("idTag", OType.STRING);
-            hasTag.createIndex("hastag_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost","idTag");
+            hasTag.createIndex("hastag_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost", "idTag");
         }
 
         if (db.getClass("HasInterest") == null) {
             OClass hasInterest = db.createEdgeClass("HasInterest");
             hasInterest.createProperty("idPerson", OType.STRING);
             hasInterest.createProperty("idTag", OType.STRING);
-            hasInterest.createIndex("hasinterest_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPerson","idTag");
+            hasInterest.createIndex("hasinterest_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPerson", "idTag");
         }
 
         if (db.getClass("HasCreated") == null) {
             OClass hasCreated = db.createEdgeClass("HasCreated");
             hasCreated.createProperty("idPost", OType.STRING);
             hasCreated.createProperty("idPerson", OType.STRING);
-            hasCreated.createIndex("hasicreated_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost","idPerson");
+            hasCreated.createIndex("hasicreated_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost", "idPerson");
         }
         loadSocialNetworkData();
     }
@@ -172,12 +174,12 @@ public class GraphLoader {
     }
 
     private void loadPerson(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size(); p++){
+        for (int p = 1; p < records.size(); p++) {
             // split string by no space
             String[] line = records.get(p).toString().split("\\|");
             // Now convert string into ArrayList
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
 
@@ -186,10 +188,10 @@ public class GraphLoader {
             String lastName = lineArray.get(2);
             String gender = lineArray.get(3);
             String birthdayString = lineArray.get(4);
-            Date birthday =new SimpleDateFormat("yyyy-MM-dd").parse(birthdayString);
+            Date birthday = new SimpleDateFormat("yyyy-MM-dd").parse(birthdayString);
             String creationDateString = lineArray.get(5);
             creationDateString = creationDateString.replace("T", " ");
-            Date creationDate =new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
+            Date creationDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
             String locationIP = lineArray.get(6);
             String browserUsed = lineArray.get(7);
             String place = lineArray.get(8);
@@ -200,18 +202,18 @@ public class GraphLoader {
             // Quand on appel rs.elementStream().count()rs.elementStream().count()
             // Il donne la première fois seulement comme FALSE et après TRUE sur la même record !!!!!!
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
-                createPerson(id, firstName, lastName, gender, birthday,creationDate, locationIP, browserUsed, place );
-            }
+            if (createOrnot) {
+                createPerson(id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
             }
         }
+    }
 
     private void createPerson(String id, String firstname, String lastname,
-                                         String gender, Date birthday, Date creationDate,
-                                         String locationIP, String browserUsed, String place) {
+                              String gender, Date birthday, Date creationDate,
+                              String locationIP, String browserUsed, String place) {
         OVertex person = db.newVertex("Person");
         person.setProperty("id", id);
-        person.setProperty("firstName",firstname);
+        person.setProperty("firstName", firstname);
         person.setProperty("lastName", lastname);
         person.setProperty("gender", gender);
         person.setProperty("birthday", birthday);
@@ -223,12 +225,12 @@ public class GraphLoader {
     }
 
     private void loadPost(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size(); p++){
+        for (int p = 1; p < records.size(); p++) {
 
             String[] line = records.get(p).toString().split("\\|");
 
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
 
@@ -236,7 +238,7 @@ public class GraphLoader {
             String imageFile = lineArray.get(1);
             String creationDateString = lineArray.get(2);
             creationDateString = creationDateString.replace("T", " ");
-            Date creationDate =new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
+            Date creationDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
             String locationIP = lineArray.get(3);
             String browserUsed = lineArray.get(4);
             String language = lineArray.get(5);
@@ -247,18 +249,18 @@ public class GraphLoader {
             OResultSet rs = db.query(query, id);
 
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
-                createPost(id, imageFile, creationDate, locationIP, browserUsed,language, content, length );
+            if (createOrnot) {
+                createPost(id, imageFile, creationDate, locationIP, browserUsed, language, content, length);
             }
         }
     }
 
     public void createPost(String id, String imageFile, Date creationDate,
-                                   String locationIP, String browserUsed,
-                                   String language, String content, String length) {
+                           String locationIP, String browserUsed,
+                           String language, String content, String length) {
         OVertex post = db.newVertex("Post");
         post.setProperty("idPost", id);
-        post.setProperty("imageFile",imageFile);
+        post.setProperty("imageFile", imageFile);
         post.setProperty("creationDate", creationDate);
         post.setProperty("locationIP", locationIP);
         post.setProperty("browserUsed", browserUsed);
@@ -269,11 +271,11 @@ public class GraphLoader {
     }
 
     private void loadTag(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size(); p++){
+        for (int p = 1; p < records.size(); p++) {
             String[] line = records.get(p).toString().split(",");
 
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
             String id = lineArray.get(0);
@@ -285,7 +287,7 @@ public class GraphLoader {
             // Quand on appel rs.elementStream().count()rs.elementStream().count()
             // Il donne la première fois seulement comme FALSE et après TRUE sur la même record !!!!!!
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
+            if (createOrnot) {
                 createTag(id, name);
             }
         }
@@ -294,23 +296,23 @@ public class GraphLoader {
     private void createTag(String id, String name) {
         OVertex tag = db.newVertex("Tag");
         tag.setProperty("idTag", id);
-        tag.setProperty("name",name);
+        tag.setProperty("name", name);
         tag.save();
     }
 
     private void loadKnows(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size() ; p++){
+        for (int p = 1; p < records.size(); p++) {
             String[] line = records.get(p).toString().split("\\|");
 
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
             String id = lineArray.get(0);
             String id2 = lineArray.get(1);
             String creationDateString = lineArray.get(2);
             creationDateString = creationDateString.replace("T", " ");
-            Date creationDate =new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
+            Date creationDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
 
             String query1 = "SELECT * from Customer where id = ?";
             OResultSet rs1 = db.query(query1, id);
@@ -326,14 +328,14 @@ public class GraphLoader {
             OResultSet rs = db.query(query, id, id2);
 
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
+            if (createOrnot) {
                 createKnows(refPerson1, refPerson2, creationDate);
             }
         }
     }
 
-    private void createKnows( OVertex id, OVertex id2, Date creationDate) {
-        OElement knows = db.newEdge(id,id2,"Knows");
+    private void createKnows(OVertex id, OVertex id2, Date creationDate) {
+        OElement knows = db.newEdge(id, id2, "Knows");
         knows.setProperty("idPerson", id.getProperty("id"));
         knows.setProperty("idPerson2", id2.getProperty("id"));
         knows.setProperty("creationDate", creationDate);
@@ -341,11 +343,11 @@ public class GraphLoader {
     }
 
     private void loadHasTag(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size() ; p++){
+        for (int p = 1; p < records.size(); p++) {
             String[] line = records.get(p).toString().split("\\|");
 
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
             String idPost = lineArray.get(0);
@@ -365,7 +367,7 @@ public class GraphLoader {
             OResultSet rs = db.query(query, idPost, idTag);
 
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
+            if (createOrnot) {
                 createHasTag(refPost, refTag);
             }
         }
@@ -379,11 +381,11 @@ public class GraphLoader {
     }
 
     private void loadHasInterest(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size() ; p++){
+        for (int p = 1; p < records.size(); p++) {
             String[] line = records.get(p).toString().split("\\|");
 
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
             String idPerson = lineArray.get(0);
@@ -403,7 +405,7 @@ public class GraphLoader {
             OResultSet rs = db.query(query, idPerson, idTag);
 
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
+            if (createOrnot) {
                 createHasInterest(refPerson, refTag);
             }
         }
@@ -417,11 +419,11 @@ public class GraphLoader {
     }
 
     private void loadHasCreated(List<List<String>> records) throws ParseException {
-        for(int p=1; p<records.size() ; p++){
+        for (int p = 1; p < records.size(); p++) {
             String[] line = records.get(p).toString().split("\\|");
 
-            line[0] =  line[0].replace("[", "");
-            line[line.length -1] =  line[line.length -1].replace("]", "");
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
 
             ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
             String idPost = lineArray.get(0);
@@ -441,7 +443,7 @@ public class GraphLoader {
             OResultSet rs = db.query(query, idPost, idPerson);
 
             boolean createOrnot = rs.elementStream().count() == 0;
-            if(createOrnot) {
+            if (createOrnot) {
                 createHasCreated(refPost, refPerson);
             }
         }
@@ -454,7 +456,28 @@ public class GraphLoader {
         hasCreated.save();
     }
 
-    public void updatePost(ODocument post){
+
+    public void createEdgeProductTag(){
+        String query = "SELECT * from Product";
+        OResultSet rs = db.query(query);
+
+        String queryTag = "SELECT * from Tag ORDER BY name ASC";
+        OResultSet rsTags = db.query(queryTag);
+
+        if(db.getClass("ProductTag") == null){
+            db.createEdgeClass("ProductTag");
+        }
+
+        while (rs.hasNext()) {
+            OVertex newProduct = rs.next().getVertex().get();
+
+            newProduct.addEdge(rsTags.next().getVertex().get(), "ProductTag");
+            newProduct.save();
+        }
+    }
+
+
+    public void updatePost(ODocument post) {
         String query = "SELECT * from Post where idPost = ?";
         OResultSet rs = db.query(query, post.getProperty("idPost").toString());
         Optional<OVertex> optionalPost = rs.vertexStream().findFirst();
@@ -470,11 +493,11 @@ public class GraphLoader {
         newPost.save();
     }
 
-    public void deletePost(OVertex post){
+    public void deletePost(OVertex post) {
         post.delete().save();
     }
 
-    public void deletePost(String postID){
+    public void deletePost(String postID) {
         String query = "SELECT * from Post where idPost = ?";
         OResultSet rs = db.query(query, postID);
         Optional<OVertex> optionalPost = rs.vertexStream().findFirst();
@@ -482,7 +505,7 @@ public class GraphLoader {
         oldPost.delete().save();
     }
 
-    public void updateTag(ODocument Tag){
+    public void updateTag(ODocument Tag) {
         String query = "SELECT * from Tag where idTag = ?";
         OResultSet rs = db.query(query, Tag.getProperty("idTag").toString());
         Optional<OVertex> optionalTag = rs.vertexStream().findFirst();
@@ -492,34 +515,58 @@ public class GraphLoader {
         newTag.save();
     }
 
-    public void updateHasTag(OVertex fromPost, OVertex toTag, OVertex newToTag, OVertex newFromPost){
+    public void updateHasTag(OVertex fromPost, OVertex toTag, OVertex newToTag, OVertex newFromPost) {
         String query = "SELECT * from HasTag where in.idTag = ? and out.idPost = ?";
 
         OResultSet rs = db.query(query, toTag.getProperty("idTag").toString(), fromPost.getProperty("idPost").toString());
         Optional<OEdge> optionalhasTag = rs.edgeStream().findFirst();
         OEdge hasTag = optionalhasTag.get();
 
-        if(newToTag != null){
+        if (newToTag != null) {
             Iterable<OEdge> edges = hasTag.getTo().getEdges(ODirection.IN);
 
-            for(OEdge tag: edges){
-                if(tag.getIdentity().equals(toTag.getIdentity())){
+            for (OEdge tag : edges) {
+                if (tag.getIdentity().equals(toTag.getIdentity())) {
                     tag.delete();
                 }
             }
-        hasTag.getFrom().addEdge(newToTag);
+            hasTag.getFrom().addEdge(newToTag);
         }
 
-        if(newFromPost != null){
+        if (newFromPost != null) {
             Iterable<OEdge> edges = hasTag.getTo().getEdges(ODirection.OUT);
 
-            for(OEdge post: edges){
-                if(post.getIdentity().equals(toTag.getIdentity())){
+            for (OEdge post : edges) {
+                if (post.getIdentity().equals(toTag.getIdentity())) {
                     post.delete();
                 }
             }
             hasTag.getTo().addEdge(newFromPost);
         }
-    hasTag.save();
+        hasTag.save();
+    }
+
+    public void query4() {
+        /**
+         * Query 4. Find the top-2 persons who spend the highest amount of money in orders. Then for
+         each person, traverse her knows-graph with 3-hop to find the friends, and finally return the
+         common friends of these two persons.
+         * */
+
+        String query = "SELECT PersonId FROM (SELECT PersonId, SUM(TotalPrice) as amountSpent FROM Order GROUP BY PersonId ORDER BY amountSpent DESC LIMIT 2)";
+        OResultSet rs = db.query(query);
+        ArrayList<String> listCustomers = new ArrayList<>();
+        while (rs.hasNext()) {
+            listCustomers.add(rs.next().getProperty("PersonId").toString());
+        }
+            String sql = "SELECT intersect((TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ? ) MAXDEPTH 3)," +
+                    "(TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3))";
+
+        System.out.println(listCustomers.get(0));
+        OResultSet result = db.query(sql, listCustomers.get(0), listCustomers.get(1));
+        //String resultQuery4 = result.stream().findFirst().get().toElement();
+
+        //String sql1 =  "TRAVERSE out(\"Knows\") FROM (select from Customer where PersonId= ? ) while $depth <= 3 STRATEGY BREADTH_FIRST";
+           //String sql2 =  "TRAVERSE out(\"Knows\") FROM (select from Customer where PersonId= ?) while $depth <= 3 STRATEGY BREADTH_FIRST)";
     }
 }
