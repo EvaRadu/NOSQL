@@ -241,6 +241,52 @@ public class Main {
 
     }
 
+    // Getting comments of the Feedbacks for a product with a low grade,
+    // and the content of Posts posted in the specified interval
+    public static ArrayList<String> query3(ODatabaseSession db, String from, String to, String product_asin){
+        ArrayList<String> res = new ArrayList<>();
+
+        // We select the feedbacks related to our product
+        String query = "SELECT * from Feedback where productAsin = ?";
+        OResultSet rs = db.query(query, product_asin);
+
+        while(rs.hasNext()){
+            Optional<OEdge> optional = rs.next().getEdge();
+            if (optional.isPresent()) {
+                OEdge feedback = optional.get();
+                String text = (String)feedback.getProperty("comment");
+                // We need to parse the grading in the comment ex: "4.5,blablabla"
+                String grade = "";
+                int cpt = 1;
+                while(text.charAt(cpt) !=",".charAt(0)){
+                    grade = grade + text.charAt(cpt);
+                    cpt ++;
+                }
+                float sentiment = Float.parseFloat(grade);
+                // We keep the comment if the grading is bad
+                if(sentiment<2.5){
+                    res.add(text);
+                }
+            }
+        }
+        rs.close();
+
+        // We now select Post created in our interval
+        query = "SELECT * from Post where creationDate between ? and ?";
+        OResultSet rs2 = db.query(query, from, to);
+
+        while(rs2.hasNext()){
+            Optional<OVertex> optional = rs2.next().getVertex();
+            if (optional.isPresent()) {
+                OVertex post = optional.get();
+                String text = (String)post.getProperty("content");
+                res.add(text);
+            }
+        }
+        return res;
+    }
+
+
     /*
         Query 8 :
          For all the products of a given category during a given year, compute its total sales

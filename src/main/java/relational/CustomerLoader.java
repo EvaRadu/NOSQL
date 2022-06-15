@@ -35,7 +35,7 @@ public class CustomerLoader {
 
     public void load() {
         if (this.db.getClass("Customer") == null) {
-            OClass customer = this.db.createVertexClass("Customer");
+            OClass customer = db.createVertexClass("Customer");
             customer.createProperty("id", OType.STRING);
             customer.createProperty("firstName", OType.STRING);
             customer.createProperty("lastName", OType.STRING);
