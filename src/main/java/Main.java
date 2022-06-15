@@ -564,6 +564,21 @@ given category. Finally, return feedback with the 5-rating review of those bough
          For all the products of a given category during a given year, compute its total sales
          amount, and measure its popularity in the social media.
     */
+    public static void query10(ODatabaseSession db) {
+        String query10="SELECT id, max(OUT(\"EdgeCustomerOrder\").OrderDate) as Recency, " +
+                "COUNT(OUT(\"EdgeCustomerOrder\").OrderId) as Frequency, SUM(OUT(\"EdgeCustomerOrder\").TotalPrice) as " +
+                "Monetary FROM Customer Where id IN (Select id, count(id) as counts from (Select OUT('HasCreated').id " +
+                "as id From Post Where creationDate >= date('05-01-2010', 'dd-MM-yyyy') Group by id) " +
+                "Order by counts DESC limit 10) GROUP BY id";
+
+        OResultSet result = db.query(query10);
+        while (result.hasNext()){
+            System.out.println(result.next());
+        }
+        result.close();
+    }
+
+
     public static void query8(ODatabaseSession db, String year, String category) throws ParseException {
         String query1 = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
         OResultSet rs = db.query(query1);
