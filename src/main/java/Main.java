@@ -616,6 +616,20 @@ given category. Finally, return feedback with the 5-rating review of those bough
         }
     }
 
+    public static void query10(ODatabaseSession db) {
+        String query10="SELECT id, max(OUT(\"EdgeCustomerOrder\").OrderDate) as Recency, " +
+                "COUNT(OUT(\"EdgeCustomerOrder\").OrderId) as Frequency, SUM(OUT(\"EdgeCustomerOrder\").TotalPrice) as " +
+                "Monetary FROM Customer Where id IN (Select id, count(id) as counts from (Select OUT('HasCreated').id " +
+                "as id From Post Where creationDate >= date('05-01-2010', 'dd-MM-yyyy') Group by id) " +
+                "Order by counts DESC limit 10) GROUP BY id";
+
+        OResultSet result = db.query(query10);
+        while (result.hasNext()){
+            System.out.println(result.next());
+        }
+        result.close();
+    }
+
 
         public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException, ParserConfigurationException, SAXException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
