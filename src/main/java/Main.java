@@ -47,7 +47,7 @@ public class Main {
         Optional custRes = rsCust.elementStream().findFirst();
         if (custRes.isPresent()) {
             OVertex customerVertex = (OVertex) custRes.get();
-
+            System.out.println("========= PROFILE =========");
             System.out.println((String) customerVertex.getProperty("id"));
             System.out.println((String) customerVertex.getProperty("firstName"));
             System.out.println((String) customerVertex.getProperty("lastName"));
@@ -57,11 +57,11 @@ public class Main {
             System.out.println((String) customerVertex.getProperty("locationIP"));
             System.out.println((String) customerVertex.getProperty("browserUsed"));
             System.out.println((String) customerVertex.getProperty("place"));
+            System.out.println("\n========= HasCreatedPosts =========");
 
             for (OEdge e : customerVertex.getEdges(ODirection.OUT, "hasCreated")) {
                 if (e.getProperty("idPerson").equals(id)) {
                     OVertex post = e.getVertex(ODirection.OUT);
-
                     System.out.println((String) post.getProperty("idPost"));
                     System.out.println((String) post.getProperty("imageFile"));
                     System.out.println((String) post.getProperty("creationDate"));
@@ -78,7 +78,7 @@ public class Main {
 
         String queryOrder = "SELECT * from Order where PersonId = ?";
         OResultSet rsOrder = db.query(queryOrder, id);
-
+        System.out.println("\n========= ORDERS =========");
         while (rsOrder.hasNext()) {
             Optional<OVertex> optional = rsOrder.next().getVertex();
             if (optional.isPresent()) {
@@ -93,6 +93,7 @@ public class Main {
 
         String queryInvoice = "SELECT * from Invoice where personId = ?";
         OResultSet rsInvoice = db.query(queryInvoice, id);
+        System.out.println("\n========= INVOICES =========");
         while (rsInvoice.hasNext()) {
             Optional<OVertex> optional = rsInvoice.next().getVertex();
             if (optional.isPresent()) {
@@ -107,6 +108,7 @@ public class Main {
 
         String queryFeedback = "SELECT * from Feedback where personID = ?";
         OResultSet rsFeedback = db.query(queryFeedback, id);
+        System.out.println("\n========= FEEDBACKS =========");
         while (rsFeedback.hasNext()) {
             Optional<OEdge> optional = rsFeedback.next().getEdge();
             if (optional.isPresent()) {
@@ -116,6 +118,8 @@ public class Main {
         }
         rsFeedback.close();
 
+        /*
+        //Select * from Post where idPost in (Select idPost from HasCreated where idPerson=?)
         String queryHasCreated = "Select * from HasCreated where idPerson = ?";
         OResultSet rsHasCreated = db.query(queryHasCreated, id);
         while (rsHasCreated.hasNext()) {
@@ -125,7 +129,6 @@ public class Main {
                 Date datePost = (Date) post.getProperty("creationDate");
                 if (datePost.after(lastMonth) && datePost.before(date)) {
 
-                    System.out.println((String) post.getProperty("idPost"));
                     System.out.println((String) post.getProperty("imageFile"));
                     System.out.println((Date)   post.getProperty("creationDate"));
                     System.out.println((String) post.getProperty("locationIP"));
@@ -137,8 +140,14 @@ public class Main {
                 }
             }
             rsHasCreated.close();
-        }
+        */
+
+        String queryTag = "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = 4145) GROUP BY idTag ORDER BY nbTags DESC";
+        OResultSet rsTag = db.query(queryTag, id);
+        System.out.println("\n========= The tag which the person has engaged the greatest times in the posts =========");
+        System.out.println(rsTag.stream().findFirst().get());
     }
+
 
     
     /*
@@ -233,6 +242,52 @@ public class Main {
 
     }
 
+    // Getting comments of the Feedbacks for a product with a low grade,
+    // and the content of Posts posted in the specified interval
+    public static ArrayList<String> query3(ODatabaseSession db, String from, String to, String product_asin){
+        ArrayList<String> res = new ArrayList<>();
+
+        // We select the feedbacks related to our product
+        String query = "SELECT * from Feedback where productAsin = ?";
+        OResultSet rs = db.query(query, product_asin);
+
+        while(rs.hasNext()){
+            Optional<OEdge> optional = rs.next().getEdge();
+            if (optional.isPresent()) {
+                OEdge feedback = optional.get();
+                String text = (String)feedback.getProperty("comment");
+                // We need to parse the grading in the comment ex: "4.5,blablabla"
+                String grade = "";
+                int cpt = 1;
+                while(text.charAt(cpt) !=",".charAt(0)){
+                    grade = grade + text.charAt(cpt);
+                    cpt ++;
+                }
+                float sentiment = Float.parseFloat(grade);
+                // We keep the comment if the grading is bad
+                if(sentiment<2.5){
+                    res.add(text);
+                }
+            }
+        }
+        rs.close();
+
+        // We now select Post created in our interval
+        query = "SELECT * from Post where creationDate between ? and ?";
+        OResultSet rs2 = db.query(query, from, to);
+
+        while(rs2.hasNext()){
+            Optional<OVertex> optional = rs2.next().getVertex();
+            if (optional.isPresent()) {
+                OVertex post = optional.get();
+                String text = (String)post.getProperty("content");
+                res.add(text);
+            }
+        }
+        return res;
+    }
+
+
     /*
         Query 8 :
          For all the products of a given category during a given year, compute its total sales
@@ -284,13 +339,11 @@ public class Main {
 
         // QUERY 1
 
-        /*
-        long now = System.currentTimeMillis();
-        Date sqlDate = new Date(now);
-        Main.request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
+
+        request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
         System.out.println("done!");
         db.close();
-         */
+
 
 
         // QUERY 2
@@ -451,14 +504,14 @@ public class Main {
 
 
         /*** 4.4 Graph ****/
-        GraphLoader graphLoader = new GraphLoader(db);
+        /*GraphLoader graphLoader = new GraphLoader(db);
 
-        /* Créer un post */
+        /* Créer un post
         graphLoader.createPost("1399511627255", "image.png",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-11-18 07:13:13.099+0000"),
                 "43.290.55.178","Chrome", "fr", "A new post", "350");
 
-        /* Mise à jour post */
+         Mise à jour post
         ODocument post = new ODocument("Post");
         post.field("idPost","1399511627255");
         post.field("imageFile","anotherImage.png");
@@ -470,7 +523,7 @@ public class Main {
         post.field("content","A new post 2");
         post.field("length","890");
 
-        graphLoader.updatePost(post);
+        graphLoader.updatePost(post);*/
     }
 
 
