@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Main {
     //REQUEST 1
@@ -335,6 +336,41 @@ public class Main {
         return res;
     }
 
+    public static void query4(ODatabaseSession db) {
+        /**
+         * Query 4. Find the top-2 persons who spend the highest amount of money in orders. Then for
+         each person, traverse her knows-graph with 3-hop to find the friends, and finally return the
+         common friends of these two persons.
+         * */
+        String query = "SELECT PersonId FROM (SELECT PersonId, SUM(TotalPrice) as amountSpent FROM Order GROUP BY PersonId ORDER BY amountSpent DESC LIMIT 2)";
+        OResultSet rs = db.query(query);
+        ArrayList<String> listCustomers = new ArrayList<>();
+        while (rs.hasNext()) {
+            listCustomers.add(rs.next().getProperty("PersonId").toString());
+        }
+        String sql = "SELECT intersect((TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ? ) MAXDEPTH 3)," +
+                "(TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3))";
+
+        OResultSet result = db.query(sql, listCustomers.get(0), listCustomers.get(1));
+
+        ArrayList<String> customers = new ArrayList<>();
+        while(result.hasNext()) {
+            String customersOridsString = result.next().getProperty("intersect(($$$SUBQUERY$$_0), ($$$SUBQUERY$$_1))").toString();
+            customersOridsString = customersOridsString.replace("[", "");
+            customersOridsString = customersOridsString.replace("]", "");
+            String[] customersOrids  = customersOridsString.split(",");
+
+            System.out.println("People found in the interesction of the friends graph of 2 customers");
+            for(String orid : customersOrids)
+            {
+                String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+                OResultSet firstLastName = db.query(query5, orid);
+                System.out.println(firstLastName.stream().findFirst().get());
+            }
+        }
+    }
+
+
     /* Query 5 :
 Given a start customer and a product category, find persons who are this customer's
 friends within 3-hop friendships in Knows graph, besides, they have bought products in the
@@ -391,6 +427,64 @@ given category. Finally, return feedback with the 5-rating review of those bough
         for (String comment: listFeedbackResult) {
             System.out.println(comment);
         }
+    }
+
+    public static void query6(ODatabaseSession db, OVertex customer1, OVertex customer2) {
+        /**
+         Query 6. Given customer 1 and customer 2, find persons in the shortest path between them
+         in the subgraph, and return the TOP 3 best sellers from all these persons' purchases.
+         **/
+        String query = "SELECT shortestPath( ? , ? , \"OUT\", \"knows\") as sp";
+        OResultSet rs = db.query(query, customer1.getIdentity(), customer2.getIdentity());
+
+        String customersOridsString = rs.stream().findFirst().get().getProperty("sp").toString();
+
+        customersOridsString = customersOridsString.replace("[", "");
+        customersOridsString = customersOridsString.replace("]", "");
+        String[] customersOrids = customersOridsString.split(",");
+
+        List<String> listIDs = new ArrayList<>();
+        for (String orid : customersOrids) {
+            String query5 = "SELECT id FROM Customer WHERE @rid = ?";
+            OResultSet ids = db.query(query5, orid);
+            listIDs.add(ids.stream().findFirst().get().getProperty("id").toString());
+        }
+
+        String query2 = " SELECT OUT(\"Orderline\").asin as products FROM Order " +
+                "WHERE PersonId = ? OR PersonId = ? OR PersonId = ? OR PersonId = ? GROUP BY products";
+
+        OResultSet rs2 = db.query(query2, listIDs.get(0), listIDs.get(1), listIDs.get(2), listIDs.get(3));
+        List<String> listProducts = new ArrayList<>();
+
+        while (rs2.hasNext()){
+
+            String productsString = rs2.next().getProperty("products").toString();
+            productsString = productsString.replace("[", "");
+            productsString = productsString.replace("]", "");
+            String[] productsIds = productsString.split(",");
+            listProducts.add(productsIds[0]);
+        }
+
+        Map<String, Long> counts =
+                listProducts.stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
+
+
+        List ordered = counts.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue()).toList();
+
+        System.out.println("Customers found in shortestPath");
+        for(String orid : customersOrids)
+        {
+            String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+            OResultSet firstLastName = db.query(query5, orid);
+            System.out.println(firstLastName.stream().findFirst().get());
+        }
+
+        System.out.println("TOP 3 sales of the products bought by the above customers");
+        System.out.println(ordered.get(ordered.size()-1) + " / " +
+                ordered.get(ordered.size()-2) + " / " + ordered.get(ordered.size()-3));
+
     }
 
     // We get the ratio of negative reviews for the Products of the given Vendor where the sales
@@ -470,6 +564,21 @@ given category. Finally, return feedback with the 5-rating review of those bough
          For all the products of a given category during a given year, compute its total sales
          amount, and measure its popularity in the social media.
     */
+    public static void query10(ODatabaseSession db) {
+        String query10="SELECT id, max(OUT(\"EdgeCustomerOrder\").OrderDate) as Recency, " +
+                "COUNT(OUT(\"EdgeCustomerOrder\").OrderId) as Frequency, SUM(OUT(\"EdgeCustomerOrder\").TotalPrice) as " +
+                "Monetary FROM Customer Where id IN (Select id, count(id) as counts from (Select OUT('HasCreated').id " +
+                "as id From Post Where creationDate >= date('05-01-2010', 'dd-MM-yyyy') Group by id) " +
+                "Order by counts DESC limit 10) GROUP BY id";
+
+        OResultSet result = db.query(query10);
+        while (result.hasNext()){
+            System.out.println(result.next());
+        }
+        result.close();
+    }
+
+
     public static void query8(ODatabaseSession db, String year, String category) throws ParseException {
         String query1 = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
         OResultSet rs = db.query(query1);
@@ -540,7 +649,7 @@ given category. Finally, return feedback with the 5-rating review of those bough
 
 
         //request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
-       // System.out.println("done!");
+        //System.out.println("done!");
         //db.close();
 
 
@@ -548,6 +657,9 @@ given category. Finally, return feedback with the 5-rating review of those bough
         //query2(db,"B005FUKW6M","2001-12-18", "2021-01-18");
 
 
+
+          //QUERY 8
+          //  query8(db,"2018");
         // QUERY 4
 
         // graphLoader.query4();
@@ -607,6 +719,24 @@ given category. Finally, return feedback with the 5-rating review of those bough
         post.delete().save();
 */
 
-    }
-}
 
+        /** Query 4 **/
+
+        Main.query4(db);
+
+            /** Query 6 **/
+            OVertex customer1 = null;
+            OVertex customer2 = null;
+                String query = "SELECT * FROM Customer LIMIT 20";
+                OResultSet rs = db.query(query);
+                List<OVertex> customersList = rs.vertexStream().toList();
+                customer1 = customersList.get(0);
+                customer2 = customersList.get(7);
+                rs.close();
+
+            Main.query6(db, customer1, customer2);
+
+    }
+
+
+}

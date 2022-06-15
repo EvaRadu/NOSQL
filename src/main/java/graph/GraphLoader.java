@@ -13,6 +13,8 @@ import com.orientechnologies.orient.core.sql.parser.ORid;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -571,6 +573,7 @@ public class GraphLoader {
             customersOridsString = customersOridsString.replace("]", "");
             String[] customersOrids  = customersOridsString.split(",");
 
+            System.out.println("People found in the interesction of the friends graph of 2 customers");
             for(String orid : customersOrids)
             {
                 String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
@@ -578,5 +581,63 @@ public class GraphLoader {
                 System.out.println(firstLastName.stream().findFirst().get());
             }
         }
+    }
+
+    public void query6(OVertex customer1, OVertex customer2) {
+        /**
+         Query 6. Given customer 1 and customer 2, find persons in the shortest path between them
+         in the subgraph, and return the TOP 3 best sellers from all these persons' purchases.
+         **/
+        String query = "SELECT shortestPath( ? , ? , \"OUT\", \"knows\") as sp";
+        OResultSet rs = db.query(query, customer1.getIdentity(), customer2.getIdentity());
+
+        String customersOridsString = rs.stream().findFirst().get().getProperty("sp").toString();
+
+        customersOridsString = customersOridsString.replace("[", "");
+        customersOridsString = customersOridsString.replace("]", "");
+        String[] customersOrids = customersOridsString.split(",");
+
+        List<String> listIDs = new ArrayList<>();
+        for (String orid : customersOrids) {
+            String query5 = "SELECT id FROM Customer WHERE @rid = ?";
+            OResultSet ids = db.query(query5, orid);
+            listIDs.add(ids.stream().findFirst().get().getProperty("id").toString());
+        }
+
+        String query2 = " SELECT OUT(\"Orderline\").asin as products FROM Order " +
+                "WHERE PersonId = ? OR PersonId = ? OR PersonId = ? OR PersonId = ? GROUP BY products";
+
+        OResultSet rs2 = db.query(query2, listIDs.get(0), listIDs.get(1), listIDs.get(2), listIDs.get(3));
+        List<String> listProducts = new ArrayList<>();
+
+        while (rs2.hasNext()){
+
+            String productsString = rs2.next().getProperty("products").toString();
+            productsString = productsString.replace("[", "");
+            productsString = productsString.replace("]", "");
+            String[] productsIds = productsString.split(",");
+            listProducts.add(productsIds[0]);
+        }
+
+        Map<String, Long> counts =
+                listProducts.stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
+
+
+        List ordered = counts.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue()).toList();
+
+        System.out.println("Customers found in shortestPath");
+        for(String orid : customersOrids)
+        {
+            String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+            OResultSet firstLastName = db.query(query5, orid);
+            System.out.println(firstLastName.stream().findFirst().get());
+        }
+
+        System.out.println("TOP 3 sales of the products bought by the above customers");
+        System.out.println(ordered.get(ordered.size()-1) + " / " +
+                ordered.get(ordered.size()-2) + " / " + ordered.get(ordered.size()-3));
+
     }
 }
