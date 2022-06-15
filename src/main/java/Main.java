@@ -790,7 +790,11 @@ given category. Finally, return feedback with the 5-rating review of those bough
         public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException, ParserConfigurationException, SAXException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
-        ODatabaseSession db = orientDB.open("testdb", "root", "2610");
+        ODatabaseSession db = orientDB.open("testdb3", "root", "2610");
+
+        InvoiceLoader invoiceLoader = new InvoiceLoader(db);
+        invoiceLoader.tests(db);
+
 
         /* ------------------------ */
         /* -- PARTIE 5 : QUERIES -- */

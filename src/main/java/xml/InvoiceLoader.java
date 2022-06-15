@@ -178,16 +178,12 @@ public class InvoiceLoader {
 
     public static void insertOneInvoice(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
-
-        String orderId = (String) json.get("orderId");
-        String personId = (String) json.get("personId");
-        Date orderDate = (Date) json.get("orderDate");
-        float price = (float) json.get("price");
-        String asin = (String) json.get("asin");
-        String productId = (String) json.get("productId");
+        String orderId = doc.getProperty("orderId");
+        String personId = doc.getProperty("personId");
+        Date orderDate =  doc.getProperty("orderDate");
+        float price =  doc.getProperty("price");
+        String asin =   doc.getProperty("asin");
+        String productId =  doc.getProperty("productId");
 
         String query = "SELECT * from Invoice where Invoice = ?";
         OResultSet rs = db.query(query, orderId);
@@ -196,25 +192,21 @@ public class InvoiceLoader {
             OVertex invoice = createInvoice(db, orderId, personId, orderDate, price);
             invoice.getEdges(ODirection.OUT);
             linkInvoiceToProduct(db,invoice,asin,productId);
-            System.out.println("The invoice " + orderId + " has been inserted");
+            invoice.save();
+            System.out.println("The invoice n°" + orderId + " has been inserted");
         } else {
-            System.out.println("The invoice " + orderId + " is already present among the vendor vertices");
+            System.out.println("The invoice n°" + orderId + " is already present among the vendor vertices");
         }
     }
 
 
     public static void updateOneInvoice(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
 
-        String orderId = (String) json.get("orderId");
-        String personId = (String) json.get("personId");
-        Date orderDate = (Date) json.get("orderDate");
-        float price = (float) json.get("price");
-        //String asin = (String) json.get("asin");
-        //String productId = (String) json.get("productId");
+        String orderId = doc.getProperty("orderId");
+        String personId = doc.getProperty("personId");
+        Date orderDate =  doc.getProperty("orderDate");
+        float price =  doc.getProperty("price");
 
         String query = "SELECT * from Invoice where Invoice = ?";
         OResultSet rs = db.query(query, orderId);
@@ -241,29 +233,32 @@ public class InvoiceLoader {
             };
             db.delete(invoiceVertex);
             */
-            System.out.println("The invoice " + orderId + " has been updated");
+            invoiceVertex.save();
+            System.out.println("The invoice n°" + orderId + " has been updated");
         } else {
-            System.out.println("The invoice " + orderId + " is not present");
+            System.out.println("The invoice n°" + orderId + " is not present");
         }
     }
 
 
     public static void deleteOneInvoice(ODatabaseSession db, ODocument doc) {
 
-        ORecord r = doc.getRecord();
-        String s = r.toJSON();
-        JSONObject json = (JSONObject) JSONValue.parse(s);
+        String orderId = doc.getProperty("orderId");
+        String personId = doc.getProperty("personId");
+        Date orderDate =  doc.getProperty("orderDate");
+        float price =  doc.getProperty("price");
+        String asin =   doc.getProperty("asin");
+        String productId =  doc.getProperty("productId");
 
-        String invoice = (String) json.get("Invoice");
 
-        String query = "SELECT * from Invoice where Invoice = ?";
-        OResultSet rs = db.query(query, invoice);
+        String query = "SELECT * from Invoice where orderId = ?";
+        OResultSet rs = db.query(query, orderId);
         Optional invoiceRes = rs.elementStream().findFirst();
         if (invoiceRes.isPresent()) {
             db.delete((OVertex) invoiceRes.get());
-            System.out.println("The invoice " + invoice + " has been deleted");
+            System.out.println("The invoice n°" + orderId + " has been deleted");
         } else {
-            System.out.println("The invoice " + invoice + " is already not present.");
+            System.out.println("The invoice n°" + orderId + " is already not present.");
         }
     }
 
@@ -288,5 +283,32 @@ public class InvoiceLoader {
         for(ODocument document : docs){
             deleteOneInvoice(db, document);
         }
+    }
+
+    public void tests(ODatabaseSession db){
+        InvoiceLoader invoiceLoader = new InvoiceLoader(db);
+
+        ODocument doc = new ODocument("Invoice");
+        doc.setProperty("orderId","123");
+        doc.setProperty("personId","007");
+        doc.setProperty("orderDate","2019-03-07");
+        doc.setProperty("price","400");
+
+        ODocument doc2 = new ODocument("Invoice");
+        doc2.setProperty("orderId","000");
+        doc2.setProperty("personId","734");
+        doc2.setProperty("orderDate","2009-01-07");
+        doc2.setProperty("price","700");
+
+        List<ODocument> docs = new ArrayList<ODocument>();
+        docs.add(doc);
+        docs.add(doc2);
+
+
+        invoiceLoader.insertOneInvoice(db,doc);
+        invoiceLoader.deleteOneInvoice(db,doc);
+
+        invoiceLoader.insertManyInvoice(db,docs);
+        invoiceLoader.deleteManyInvoice(db,docs);
     }
 }
