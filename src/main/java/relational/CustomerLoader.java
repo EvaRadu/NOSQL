@@ -225,4 +225,60 @@ public class CustomerLoader {
     }
 
 
+    public static void testCRUDmethod(ODatabaseSession db) {
+        /* -------------------------- */
+        /* --- TESTS 4.4 CUSTOMERS -- */
+        /* -------------------------- */
+
+        CustomerLoader customerLoader = new CustomerLoader(db);
+
+        ODocument docCustomer1 = new ODocument("Customer");
+        docCustomer1.field("id", "123");
+        docCustomer1.field("firstName", "Eva");
+        docCustomer1.field("lastName", "Radu");
+        docCustomer1.field("gender", "female");
+        docCustomer1.field("birthday", "2001-02-26");
+        docCustomer1.field("creationDate", "2022-06-13T02:10:23.099+0000");
+        docCustomer1.field("locationIP", "27.98.237.197");
+        docCustomer1.field("browserUsed", "Opera");
+        docCustomer1.field("place", "2037");
+
+        ODocument docCustomer2 = new ODocument("Customer");
+        docCustomer2.field("id", "123");
+        docCustomer2.field("firstName", "Eva");
+        docCustomer2.field("lastName", "Radu");
+        docCustomer2.field("gender", "female");
+        docCustomer2.field("birthday", "2001-02-26");
+        docCustomer2.field("creationDate", "2022-06-13T02:10:23.099+0000");
+        docCustomer2.field("locationIP", "27.98.237.197");
+        docCustomer2.field("browserUsed", "Chrome");
+        docCustomer2.field("place", "2037");
+
+        ODocument docCustomer3 = new ODocument("Customer");
+        docCustomer3.field("id", "1234");
+        docCustomer3.field("firstName", "Mia");
+        docCustomer3.field("lastName", "Swery");
+        docCustomer3.field("gender", "female");
+        docCustomer3.field("birthday", "2000-04-16");
+        docCustomer3.field("creationDate", "2022-06-13T02:10:23.099+0000");
+        docCustomer3.field("locationIP", "20.10.458.130");
+        docCustomer3.field("browserUsed", "Firefox");
+        docCustomer3.field("place", "2160");
+
+        List<ODocument> docsCustomer = new ArrayList<ODocument>();
+        docsCustomer.add(docCustomer1);
+        docsCustomer.add(docCustomer3);
+
+
+        customerLoader.insertOneCustomer(db,docCustomer1);
+        customerLoader.updateOneCustomer(db,docCustomer2);
+        customerLoader.deleteOneCustomer(db,docCustomer2);
+
+        customerLoader.insertManyCustomers(db,docsCustomer);
+        customerLoader.updateManyCustomers(db,docsCustomer);
+        customerLoader.deleteManyCustomers(db,docsCustomer);
+
+    }
+
+
 }
