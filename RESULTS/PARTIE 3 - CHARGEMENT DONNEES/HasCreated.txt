@@ -1,0 +1,65 @@
+HasCreated (Edge) arc
+
+1) On crée la classe type Edge
+
+if (db.getClass("HasCreated") == null) {
+            OClass hasCreated = db.createEdgeClass("HasCreated");
+            hasCreated.createProperty("idPost", OType.STRING);
+            hasCreated.createProperty("idPerson", OType.STRING);
+            hasCreated.createIndex("hasicreated_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPost", "idPerson");
+        }
+        loadSocialNetworkData();
+    }
+
+
+2) On charge les données de CSV
+     List<List<String>> records7 = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/post_hasCreator_person_0_0.csv"))) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records7.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+    }
+
+3) On prépare les données pour crée l'entité dans la base
+private void loadHasCreated(List<List<String>> records) throws ParseException {
+        for (int p = 1; p < records.size(); p++) {
+            String[] line = records.get(p).toString().split("\\|");
+
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
+
+            ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
+            String idPost = lineArray.get(0);
+            String idPerson = lineArray.get(1);
+
+            String query1 = "SELECT * from Customer where id = ?";
+            OResultSet rs1 = db.query(query1, idPerson);
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPerson = optionalID.get();
+
+            String query2 = "SELECT * from Post where idPost = ?";
+            OResultSet rs2 = db.query(query2, idPost);
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refPost = optionalID2.get();
+
+            String query = "SELECT * from HasCreated where idPost = ? and idPerson = ? ";
+            OResultSet rs = db.query(query, idPost, idPerson);
+
+            boolean createOrnot = rs.elementStream().count() == 0;
+            if (createOrnot) {
+                createHasCreated(refPost, refPerson);
+            }
+        }
+    }
+
+4) On crée l'arc HasCreated dans la base de données et persite avec save()
+ private void createHasCreated(OVertex idPost, OVertex idPerson) {
+        OElement hasCreated = db.newEdge(idPost.getRecord(), idPerson.getRecord(), "HasCreated");
+        hasCreated.setProperty("idPost", idPost.getProperty("idPost"));
+        hasCreated.setProperty("idPerson", idPerson.getProperty("id"));
+        hasCreated.save();
+    }
+

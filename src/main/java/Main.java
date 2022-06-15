@@ -617,10 +617,6 @@ given category. Finally, return feedback with the 5-rating review of those bough
     }
 
 
-
-
-
-
         public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException, ParserConfigurationException, SAXException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
@@ -707,10 +703,12 @@ given category. Finally, return feedback with the 5-rating review of those bough
 
         /** Query 4 **/
 
-        Main.query4(db);
+
+        //Main.query4(db);
 
             /** Query 6 **/
-            OVertex customer1 = null;
+
+          /*  OVertex customer1 = null;
             OVertex customer2 = null;
                 String query = "SELECT * FROM Customer LIMIT 20";
                 OResultSet rs = db.query(query);
@@ -720,7 +718,8 @@ given category. Finally, return feedback with the 5-rating review of those bough
                 rs.close();
 
             Main.query6(db, customer1, customer2);
-
+           */
+            Main.query10(db);
     }
 
 

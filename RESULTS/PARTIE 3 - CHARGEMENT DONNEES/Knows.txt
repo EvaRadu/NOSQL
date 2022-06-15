@@ -1,0 +1,58 @@
+Knows (Edge) arc
+
+1) On charge les données de CSV
+        List<List<String>> records4 = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/person_knows_person_0_0.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records4.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+    }
+
+2) On prépare les données pour crée l'entité dans la base
+private void loadKnows(List<List<String>> records) throws ParseException {
+        for (int p = 1; p < records.size(); p++) {
+            String[] line = records.get(p).toString().split("\\|");
+
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
+
+            ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
+            String id = lineArray.get(0);
+            String id2 = lineArray.get(1);
+            String creationDateString = lineArray.get(2);
+            creationDateString = creationDateString.replace("T", " ");
+            Date creationDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
+
+            String query1 = "SELECT * from Customer where id = ?";
+            OResultSet rs1 = db.query(query1, id);
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPerson1 = optionalID.get();
+
+            String query2 = "SELECT * from Customer where id = ?";
+            OResultSet rs2 = db.query(query2, id2);
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refPerson2 = optionalID2.get();
+
+            String query = "SELECT * from Knows where idPerson = ? and idPerson2 = ? ";
+            OResultSet rs = db.query(query, id, id2);
+
+            boolean createOrnot = rs.elementStream().count() == 0;
+            if (createOrnot) {
+                createKnows(refPerson1, refPerson2, creationDate);
+            }
+        }
+    }
+
+3) On crée l'arc Knows dans la base de données et persite avec save()
+
+ private void createKnows(OVertex id, OVertex id2, Date creationDate) {
+        OElement knows = db.newEdge(id, id2, "Knows");
+        knows.setProperty("idPerson", id.getProperty("id"));
+        knows.setProperty("idPerson2", id2.getProperty("id"));
+        knows.setProperty("creationDate", creationDate);
+        knows.save();
+    }
+

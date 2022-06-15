@@ -1,0 +1,80 @@
+Post (Vertex) noeud
+
+1)  On vérifie premièrement si la classe existe, sinon on le crée et on crée son Index sur l'ID
+
+      if (db.getClass("Post") == null) {
+            OClass post = db.createVertexClass("Post");
+            post.createProperty("idPost", OType.STRING);
+            post.createProperty("imageFile", OType.STRING);
+            post.createProperty("creationDate", OType.DATE);
+            post.createProperty("locationIP", OType.STRING);
+            post.createProperty("browserUsed", OType.STRING);
+            post.createProperty("language", OType.STRING);
+            post.createProperty("content", OType.STRING);
+            post.createProperty("length", OType.INTEGER);
+            post.createIndex("Post_id_index", OClass.INDEX_TYPE.UNIQUE, "idPost");
+        }
+
+2)  On charge les données de fichier CSV
+       List<List<String>> records2 = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/post_0_0.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records2.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+3)  On passe aux paramètres la liste des records qu'on a trouvé dans le CSV
+    On crée le post dans la méthode CreatePost qui prend en paramètres les champs après avoir converti leurs types
+    et les parsé des records qu'on a recus, comme par exemple dans CreationDate on a converti de String vers Date
+
+ private void loadPost(List<List<String>> records) throws ParseException {
+        for (int p = 1; p < records.size(); p++) {
+
+            String[] line = records.get(p).toString().split("\\|");
+
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
+
+            ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
+
+            String id = lineArray.get(0);
+            String imageFile = lineArray.get(1);
+            String creationDateString = lineArray.get(2);
+            creationDateString = creationDateString.replace("T", " ");
+            Date creationDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(creationDateString);
+            String locationIP = lineArray.get(3);
+            String browserUsed = lineArray.get(4);
+            String language = lineArray.get(5);
+            String content = lineArray.get(6);
+            String length = lineArray.get(7);
+
+            String query = "SELECT * from Post where idPost = ?";
+            OResultSet rs = db.query(query, id);
+
+            boolean createOrnot = rs.elementStream().count() == 0;
+            if (createOrnot) {
+                createPost(id, imageFile, creationDate, locationIP, browserUsed, language, content, length);
+            }
+        }
+    }
+
+4) On crée un objet de type Vertex dans la base de données et on rempli les champs avec les valeurs
+    passées en paramètres et save() à la fin pour persister l'objet dans la base
+
+ public void createPost(String id, String imageFile, Date creationDate,
+                           String locationIP, String browserUsed,
+                           String language, String content, String length) {
+        OVertex post = db.newVertex("Post");
+        post.setProperty("idPost", id);
+        post.setProperty("imageFile", imageFile);
+        post.setProperty("creationDate", creationDate);
+        post.setProperty("locationIP", locationIP);
+        post.setProperty("browserUsed", browserUsed);
+        post.setProperty("language", language);
+        post.setProperty("content", content);
+        post.setProperty("length", Integer.parseInt(length));
+        post.save();
+    }
