@@ -1,0 +1,26 @@
+ //Khaoula Bouhlal
+
+ Nous calculons d'abord le RFM, Récence est la date de commande la plus récente, Fréquence est le nombre de commandes, Monétaire est la somme des commandes du client donné.
+
+Ensuite, nous n'obtenons ces résultats que pour les clients qui ont créé le plus grand nombre de messages après une année donnée, puis nous regroupons le compte par leurs ID pour obtenir le nombre de messages créés par personne, nous le filtrons en limitant uniquement le TOP 10.
+
+
+
+    Query 10. Find the top-10 most active persons by aggregating the posts during the last year,
+    then calculate their RFM (Recency, Frequency, Monetary) value in the same period, and return
+    their recent reviews and tags of interest.
+
+
+    public static void query10(ODatabaseSession db) {
+        String query10="SELECT id, max(OUT(\"EdgeCustomerOrder\").OrderDate) as Recency, " +
+                "COUNT(OUT(\"EdgeCustomerOrder\").OrderId) as Frequency, SUM(OUT(\"EdgeCustomerOrder\").TotalPrice) as " +
+                "Monetary FROM Customer Where id IN (Select id, count(id) as counts from (Select OUT('HasCreated').id " +
+                "as id From Post Where creationDate >= date('05-01-2010', 'dd-MM-yyyy') Group by id) " +
+                "Order by counts DESC limit 10) GROUP BY id";
+
+        OResultSet result = db.query(query10);
+        while (result.hasNext()){
+            System.out.println(result.next());
+        }
+        result.close();
+    }
