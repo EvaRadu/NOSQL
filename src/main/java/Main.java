@@ -2,34 +2,24 @@ import com.orientechnologies.common.collection.OMultiCollectionIterator;
 import com.orientechnologies.orient.core.db.ODatabaseSession;
 import com.orientechnologies.orient.core.db.OrientDB;
 import com.orientechnologies.orient.core.db.OrientDBConfig;
-import com.orientechnologies.orient.core.db.record.OIdentifiable;
-import com.orientechnologies.orient.core.db.record.ridbag.ORidBag;
-import com.orientechnologies.orient.core.metadata.schema.OClass;
-import com.orientechnologies.orient.core.metadata.schema.OType;
 import com.orientechnologies.orient.core.record.ODirection;
 import com.orientechnologies.orient.core.record.OEdge;
 import com.orientechnologies.orient.core.record.OVertex;
-import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.executor.OResult;
 import com.orientechnologies.orient.core.sql.executor.OResultSet;
-import graph.GraphLoader;
-import json.JsonsLoader;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
+import org.xml.sax.SAXException;
 import relational.CustomerLoader;
 import relational.VendorLoader;
 import xml.InvoiceLoader;
-
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-//import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Year;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Main {
     //REQUEST 1
@@ -159,7 +149,7 @@ public class Main {
     }
 
 
-    
+
     /*
      QUERY 2 :
        For a given product during a given period, find the people who commented or
@@ -195,6 +185,37 @@ public class Main {
             feedbackRes.add(optional2.getProperty("personID").toString());
         }
 
+
+        // GETTING THE TAGS OF THE PRODUCT
+        String queryTag = "SELECT OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+        OResultSet rsTag = db.query(queryTag, idProduct);
+        ArrayList<String> tagRes = new ArrayList<>();
+        while(rsTag.hasNext()) {
+            OResult optional3 = rsTag.next();
+            tagRes.addAll(optional3.getProperty("OUT(\"ProductTag\").idTag"));
+        }
+
+        // GETTING THE POSTS RELATED OF THE TAGS
+        String queryPost = "SELECT idPost FROM `HasTag` WHERE idTag=?";
+        ArrayList<String> postRes = new ArrayList<>();
+        for(String tag : tagRes){
+            OResultSet rsPost = db.query(queryPost, tag);
+            postRes.add(rsPost.next().getProperty("idPost").toString());
+        }
+
+        // GETTING THE CUSTOMERS WHO CREATED THESE POSTS AND CHECKING IF IT'S IN THE CORRECT PERIOD
+        String queryCustomerPost = "select creationDate, OUT(\"HasCreated\").id from `Post` where idPost=? and creationDate between ? and ?";
+        ArrayList<String> customerPostRes = new ArrayList<>();
+        for(String post : postRes){
+            OResultSet rsCustomerPost = db.query(queryCustomerPost, post, startDate, endDate);
+            while(rsCustomerPost.hasNext()) {
+                customerPostRes.addAll(rsCustomerPost.next().getProperty("OUT(\"HasCreated\").id"));
+            }
+        }
+
+
+
+
         // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
         ArrayList<String> finalOrderRes = new ArrayList<>();
 
@@ -208,10 +229,15 @@ public class Main {
         }
 
         // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
-        // AND HAD COMMENTED IT
+        // AND HAD COMMENTED IT OR POSTED ON IT
 
         ArrayList<String> finalRes = new ArrayList<>();
         for(String s : feedbackRes){
+            if(finalOrderRes.contains(s)){
+                finalRes.add(s);
+            }
+        }
+        for(String s : customerPostRes){
             if(finalOrderRes.contains(s)){
                 finalRes.add(s);
             }
@@ -230,6 +256,16 @@ public class Main {
         }
 
         System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("          CUSTOMERS WHO POSTED ON THE PRODUCT IN THE SPECIFIED PERIOD :        ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : customerPostRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("-------------------------------------------------------------------------------");
         System.out.println("           CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD :         ");
         System.out.println("-------------------------------------------------------------------------------");
 
@@ -239,16 +275,16 @@ public class Main {
             System.out.println(r1.elementStream().findFirst().get());
         }
 
-        System.out.println("-------------------------------------------------------------------------------");
-        System.out.println("   CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD AND COMMENTED IT  ");
-        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------------------");
+        System.out.println("   CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD AND COMMENTED OR POSTED ON IT  ");
+        System.out.println("--------------------------------------------------------------------------------------------");
 
         for (String s : finalRes) {
             String q1 = "SELECT * from Customer where id = ?";
             OResultSet r1 = db.query(q1, s);
             System.out.println(r1.elementStream().findFirst().get());
         }
-        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------------------");
 
     }
 
@@ -441,59 +477,310 @@ public class Main {
         }
     }
 
+    public static void query4(ODatabaseSession db) {
+        /**
+         * Query 4. Find the top-2 persons who spend the highest amount of money in orders. Then for
+         each person, traverse her knows-graph with 3-hop to find the friends, and finally return the
+         common friends of these two persons.
+         * */
+        String query = "SELECT PersonId FROM (SELECT PersonId, SUM(TotalPrice) as amountSpent FROM Order GROUP BY PersonId ORDER BY amountSpent DESC LIMIT 2)";
+        OResultSet rs = db.query(query);
+        ArrayList<String> listCustomers = new ArrayList<>();
+        while (rs.hasNext()) {
+            listCustomers.add(rs.next().getProperty("PersonId").toString());
+        }
+        String sql = "SELECT intersect((TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ? ) MAXDEPTH 3)," +
+                "(TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3))";
 
+        OResultSet result = db.query(sql, listCustomers.get(0), listCustomers.get(1));
+
+        ArrayList<String> customers = new ArrayList<>();
+        while(result.hasNext()) {
+            String customersOridsString = result.next().getProperty("intersect(($$$SUBQUERY$$_0), ($$$SUBQUERY$$_1))").toString();
+            customersOridsString = customersOridsString.replace("[", "");
+            customersOridsString = customersOridsString.replace("]", "");
+            String[] customersOrids  = customersOridsString.split(",");
+
+            System.out.println("People found in the interesction of the friends graph of 2 customers");
+            for(String orid : customersOrids)
+            {
+                String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+                OResultSet firstLastName = db.query(query5, orid);
+                System.out.println(firstLastName.stream().findFirst().get());
+            }
+        }
+    }
+
+
+    /* Query 5 :
+Given a start customer and a product category, find persons who are this customer's
+friends within 3-hop friendships in Knows graph, besides, they have bought products in the
+given category. Finally, return feedback with the 5-rating review of those bought products.
+        */
+    public static void query5(ODatabaseSession db, String idTag, String idCustomer) {
+        String query1 = "TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3";
+        OResultSet rs = db.query(query1, idCustomer);
+
+        ArrayList<List> listProducts = new ArrayList<>();
+        ArrayList<String> listIdTags = new ArrayList<>();
+        ArrayList<OVertex> listCustomersBought = new ArrayList<>();
+        ArrayList<String> listFeedback = new ArrayList<>();
+
+        int i = 0;
+        while (rs.hasNext()) {
+            OVertex prochainCustomer = rs.next().getVertex().get();
+            String query2 = "SELECT tags.idTag FROM (SELECT OUT(\"Orderline\").OUT(\"ProductTag\") as tags FROM Order WHERE PersonId = ? )";
+            OResultSet rs2 = db.query(query2, prochainCustomer.getProperty("id").toString());
+
+            while(rs2.hasNext()){
+                listIdTags.addAll(rs2.next().getProperty("tags.idTag"));
+                if(listIdTags.contains(idTag)){
+                    String query3 = "SELECT OUT(\"Orderline\").asin as produits FROM Order WHERE PersonId = ?";
+                    OResultSet rs3 = db.query(query3, prochainCustomer.getProperty("id").toString());
+                    while(rs3.hasNext()){
+                        listProducts.add(rs3.next().getProperty("produits"));
+                    }
+                    listCustomersBought.add(prochainCustomer);
+                }
+            }
+            if (i == 5){
+                break;
+            }
+            i = i+1;
+        }
+
+        for (List produitAsin: listProducts) {
+
+            String query4 = "SELECT comment FROM Feedback WHERE productAsin = ?";
+            OResultSet rs4 = db.query(query4, produitAsin.get(0));
+
+            while (rs4.hasNext()){
+                listFeedback.add(rs4.next().toString());
+            }
+        }
+
+        List<OVertex> resultListCustomers = listCustomersBought.stream().distinct().toList();
+        for (OVertex customer: resultListCustomers) {
+            System.out.println(customer.getProperty("firstName").toString() +" "+ customer.getProperty("lastName").toString());
+        }
+
+        List<String> listFeedbackResult = listFeedback.subList(0,10);
+        for (String comment: listFeedbackResult) {
+            System.out.println(comment);
+        }
+    }
+
+    public static void query6(ODatabaseSession db, OVertex customer1, OVertex customer2) {
+        /**
+         Query 6. Given customer 1 and customer 2, find persons in the shortest path between them
+         in the subgraph, and return the TOP 3 best sellers from all these persons' purchases.
+         **/
+        String query = "SELECT shortestPath( ? , ? , \"OUT\", \"knows\") as sp";
+        OResultSet rs = db.query(query, customer1.getIdentity(), customer2.getIdentity());
+
+        String customersOridsString = rs.stream().findFirst().get().getProperty("sp").toString();
+
+        customersOridsString = customersOridsString.replace("[", "");
+        customersOridsString = customersOridsString.replace("]", "");
+        String[] customersOrids = customersOridsString.split(",");
+
+        List<String> listIDs = new ArrayList<>();
+        for (String orid : customersOrids) {
+            String query5 = "SELECT id FROM Customer WHERE @rid = ?";
+            OResultSet ids = db.query(query5, orid);
+            listIDs.add(ids.stream().findFirst().get().getProperty("id").toString());
+        }
+
+        String query2 = " SELECT OUT(\"Orderline\").asin as products FROM Order " +
+                "WHERE PersonId = ? OR PersonId = ? OR PersonId = ? OR PersonId = ? GROUP BY products";
+
+        OResultSet rs2 = db.query(query2, listIDs.get(0), listIDs.get(1), listIDs.get(2), listIDs.get(3));
+        List<String> listProducts = new ArrayList<>();
+
+        while (rs2.hasNext()){
+
+            String productsString = rs2.next().getProperty("products").toString();
+            productsString = productsString.replace("[", "");
+            productsString = productsString.replace("]", "");
+            String[] productsIds = productsString.split(",");
+            listProducts.add(productsIds[0]);
+        }
+
+        Map<String, Long> counts =
+                listProducts.stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
+
+
+        List ordered = counts.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue()).toList();
+
+        System.out.println("Customers found in shortestPath");
+        for(String orid : customersOrids)
+        {
+            String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+            OResultSet firstLastName = db.query(query5, orid);
+            System.out.println(firstLastName.stream().findFirst().get());
+        }
+
+        System.out.println("TOP 3 sales of the products bought by the above customers");
+        System.out.println(ordered.get(ordered.size()-1) + " / " +
+                ordered.get(ordered.size()-2) + " / " + ordered.get(ordered.size()-3));
+
+    }
+
+    // We get the ratio of negative reviews for the Products of the given Vendor where the sales
+    // of the Product have been declining for the last quarter
+    public static HashMap<String, Float> query7(ODatabaseSession db, String vendor){
+        HashMap<String, Float> res = new HashMap<>();
+        ArrayList<OVertex> declining_products = new ArrayList<>();
+
+        // We get the products of the vendor
+        String query = "SELECT * from Product where out(\"IsFromBrand\").Vendor = ?";
+        OResultSet rs = db.query(query, vendor);
+
+        while(rs.hasNext()){
+
+            Optional<OVertex> product = rs.next().getVertex();
+            if(product.isPresent()){
+
+                // We check if that product has declining sales
+                query = "SELECT * from Orderline where in.asin = ? and out.OrderDate between ? and ?";
+                OResultSet rs2 = db.query(query, (String)product.get().getProperty("asin"), "2021-06-15", "2022-06-15");
+                long current_sales = rs2.stream().count();
+
+                query = "SELECT * from Orderline where in.asin = ? and out.OrderDate between ? and ?";
+                rs2 = db.query(query, (String)product.get().getProperty("asin"), "2020-06-15", "2021-06-15");
+                long last_sales = rs2.stream().count();
+
+                if(current_sales < last_sales){
+                    declining_products.add(product.get());
+                }
+                rs2.close();
+            }
+        }
+        rs.close();
+
+        // We now get the Feedbacks  of these Products
+        ArrayList<OVertex> feedbacks = new ArrayList<>();
+        for(OVertex p :declining_products){
+            float neg = 0;
+            float pos = 0;
+            query = "select * from Feedback where productAsin = ?";
+            OResultSet rs3 = db.query(query, (String)p.getProperty("asin"));
+            while(rs3.hasNext()) {
+                Optional<OVertex> fo = rs3.next().getVertex();
+                if (fo.isPresent()) {
+                    OVertex f = fo.get();
+                    String text = (String) f.getProperty("comment");
+                    // We need to parse the grading in the comment ex: "4.5,blablabla"
+                    String grade = "";
+                    int cpt = 1;
+                    while (text.charAt(cpt) != ",".charAt(0)) {
+                        grade = grade + text.charAt(cpt);
+                        cpt++;
+                    }
+                    float sentiment = Float.parseFloat(grade);
+                    // We keep the comment if the grading is bad
+                    if (sentiment < 2.5) {
+                        neg++;
+                    } else {
+                        pos++;
+                    }
+                }
+                rs3.close();
+            }
+            if(pos+neg == 0){
+                res.put(p.getProperty("asin"), neg);
+            } else {
+                res.put(p.getProperty("asin"), (pos + neg) / neg);
+            }
+        }
+
+        return res;
+    }
 
     /*
         Query 8 :
          For all the products of a given category during a given year, compute its total sales
          amount, and measure its popularity in the social media.
     */
-    public static void query8(ODatabaseSession db, String year) throws ParseException {
+    public static void query8(ODatabaseSession db, String year, String category) throws ParseException {
+        String query1 = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
+        OResultSet rs = db.query(query1);
 
-        String queryDate = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
-        OResultSet rs = db.query(queryDate);
 
         while(rs.hasNext()) {
             OResult optional = rs.next();
             ArrayList<String> currentDates = optional.getProperty("IN(\"Orderline\").OrderDate");
             ArrayList<Float> currentAmounts = optional.getProperty("IN(\"Orderline\").TotalPrice");
+            String currentAsin = optional.getProperty("asin");
+            ArrayList<String> resDates = new ArrayList<>();
             ArrayList<Float> resAmounts = new ArrayList<>();
             float totalSales = 0;
 
             if(!currentDates.isEmpty()){
 
+                // STEP 1 : FILTERING THE DATES
                 for(int i = 0; i<currentDates.size(); i++){
                     Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(year+"-12-31"));
                     Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(year+"-01-01").before( new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))));
-                    if(bool&&bool2) { // FILTERING THE DATES
+                    if(bool&&bool2) {
+                        resDates.add(currentDates.get(i));
                         resAmounts.add(currentAmounts.get(i));
                     }
                 }
-                for(Float money : resAmounts){
-                    totalSales = totalSales + money;
+
+                // STEP 2 : FILTERING THE CATEGORIES
+                String query2 = "SELECT asin, OUT(\"ProductTag\").name, OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+                OResultSet rs2 = db.query(query2,currentAsin);
+                OResult optional2 = rs2.next();
+                ArrayList<String> currentCategories = optional2.getProperty("OUT(\"ProductTag\").name");
+                ArrayList<String> currentPost = optional2.getProperty("OUT(\"ProductTag\").idTag");
+
+                if(currentCategories.contains(category)){
+                    for(Float money : resAmounts){
+                        totalSales = totalSales + money;
+                    }
+
+                    System.out.println("FOR THE PRODUCT n° " + currentAsin);
+                    System.out.println("------ DURING THE YEAR                :  " + year);
+                    System.out.println("------ BEING IN THE CATEGORY          :  " + category);
+                    System.out.println("------ TOTAL SALES AMOUNT             :  " + totalSales);
+                    System.out.println("------ POPULARITY IN THE SOCIAL MEDIA :  " + currentPost.size() + " posts");
+
                 }
 
-                System.out.println("TOTAL SALES AMOUT FOR PRODUCT n° " + optional.getProperty("asin") + " DURING " + year + " = " + totalSales);
+
+
             }
         }
     }
 
+    public static void query10(ODatabaseSession db) {
+        String query10="SELECT id, max(OUT(\"EdgeCustomerOrder\").OrderDate) as Recency, " +
+                "COUNT(OUT(\"EdgeCustomerOrder\").OrderId) as Frequency, SUM(OUT(\"EdgeCustomerOrder\").TotalPrice) as " +
+                "Monetary FROM Customer Where id IN (Select id, count(id) as counts from (Select OUT('HasCreated').id " +
+                "as id From Post Where creationDate >= date('05-01-2010', 'dd-MM-yyyy') Group by id) " +
+                "Order by counts DESC limit 10) GROUP BY id";
+
+        OResultSet result = db.query(query10);
+        while (result.hasNext()){
+            System.out.println(result.next());
+        }
+        result.close();
+    }
 
 
-
-
-
-        public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException {
+        public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException, ParserConfigurationException, SAXException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
         ODatabaseSession db = orientDB.open("testdb", "root", "2610");
 
-        /* -------------- */
-        /* -- PARTIE 5 -- */
-        /* -------------- */
+        /* ------------------------ */
+        /* -- PARTIE 5 : QUERIES -- */
+        /* ------------------------ */
 
         // QUERY 1
-
 
         /*query1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
         System.out.println("done!");
@@ -501,188 +788,97 @@ public class Main {
         */
 
 
+
         // QUERY 2
-        //query2(db,"B005FUKW6M","2018-12-18", "2021-01-18");
+        //query2(db,"B005FUKW6M","2001-12-18", "2021-01-18");
 
 
-            //QUERY 8
-            //query8(db,"2018");
 
+          //QUERY 8
+          //  query8(db,"2018");
 
             //QUERY 9
             query9(db, "Australia");
 
-        // LOADING THE PRODUCT DATA
-        //VendorLoader vendorLoader = new VendorLoader(db);
-        //vendorLoader.load();
-        //JsonsLoader jsonLoader = new JsonsLoader(db);
-        //jsonLoader.load();
-        //jsonLoader.createOutEdges();
+
+        // graphLoader.query4();
+        // graphLoader.query4();
+
+
+        //QUERY 8
+        //query8(db,"2018", " Levis");
+
+        /* ---------------------- */
+        // -- LOADING THE DATA -- */
+        /* ---------------------- */
         /*
+        // LOADING THE PRODUCT DATA
+        JsonsLoader jsonLoader = new JsonsLoader(db);
+        jsonLoader.load();
+        jsonLoader.createOutEdges();
+
         InvoiceLoader invoiceLoader = new InvoiceLoader(db);
         invoiceLoader.load();
-        */
-
 
         //FeedbackLoader.chargementFeedback(db);
 
-        //GraphLoader.createSocialNetworkGraph(db);
-        /* Exemple pour ajouter des records
-        OVertex v1 = db.newVertex("Tag");
-        v1.setProperty("name", "OneRF");
-        v1.save();
-        OVertex v2 = db.newVertex("Post");
-        v2.setProperty("content", "TwoTwosSS");
-        v2.save();
-        v1.addEdge(v2, "HasTag").save();
-        db.commit();
-        */
-
-
-/*
-        // LOADING THE PRODUCT DATA
-        JsonLoader jsonLoader = new JsonLoader(db);
-        jsonLoader.load();
-*/
-        /*
         // LOADING THE CUSTOMER DATA
         CustomerLoader customerLoader = new CustomerLoader(db);
-        //customerLoader.load();
-        //customerLoader.loadEdges();
+        customerLoader.load();
+        customerLoader.loadEdges();
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
-        //vendorLoader.load();
-        // exemple de création d'un document, qui sera dans GENERIC CLASS dans la BD
-        // pour voir les données dans une classe, choisi la classe et après fait QUERY ALL
+        vendorLoader.load();
 
-        /*
-        ODocument doc = new ODocument("Persons");
-        doc.field( "name", "Luke" );
-        doc.field( "surname", "Skywalker" );
-        doc.field( "city", "lalala");
-        // SAVE THE DOCUMENT
-        db.save(doc);
-        db.commit();
-        db.close();
-    */
-
-        /* ------------------------------------------------------------------------------- */
-        // Tests Eva
-
-        /* -------------------------- */
-        /* --- TESTS 4.4 CUSTOMERS -- */
-        /* -------------------------- */
-
-       /* ODocument docCustomer1 = new ODocument("Customer");
-        docCustomer1.field("id", "123");
-        docCustomer1.field("firstName", "Eva");
-        docCustomer1.field("lastName", "Radu");
-        docCustomer1.field("gender", "female");
-        docCustomer1.field("birthday", "2001-02-26");
-        docCustomer1.field("creationDate", "2022-06-13T02:10:23.099+0000");
-        docCustomer1.field("locationIP", "27.98.237.197");
-        docCustomer1.field("browserUsed", "Opera");
-        docCustomer1.field("place", "2037");
-
-        ODocument docCustomer2 = new ODocument("Customer");
-        docCustomer2.field("id", "123");
-        docCustomer2.field("firstName", "Eva");
-        docCustomer2.field("lastName", "Radu");
-        docCustomer2.field("gender", "female");
-        docCustomer2.field("birthday", "2001-02-26");
-        docCustomer2.field("creationDate", "2022-06-13T02:10:23.099+0000");
-        docCustomer2.field("locationIP", "27.98.237.197");
-        docCustomer2.field("browserUsed", "Chrome");
-        docCustomer2.field("place", "2037");
-
-        ODocument docCustomer3 = new ODocument("Customer");
-        docCustomer3.field("id", "1234");
-        docCustomer3.field("firstName", "Mia");
-        docCustomer3.field("lastName", "Swery");
-        docCustomer3.field("gender", "female");
-        docCustomer3.field("birthday", "2000-04-16");
-        docCustomer3.field("creationDate", "2022-06-13T02:10:23.099+0000");
-        docCustomer3.field("locationIP", "20.10.458.130");
-        docCustomer3.field("browserUsed", "Firefox");
-        docCustomer3.field("place", "2160");
-
-        List<ODocument> docsCustomer = new ArrayList<ODocument>();
-        docsCustomer.add(docCustomer1);
-        docsCustomer.add(docCustomer3);
-
-        /*
-        customerLoader.insertOneCustomer(db,docCustomer1);
-        customerLoader.updateOneCustomer(db,docCustomer2);
-        customerLoader.deleteOneCustomer(db,docCustomer2);
-
-        customerLoader.insertManyCustomers(db,docsCustomer);
-        customerLoader.updateManyCustomers(db,docsCustomer);
-        customerLoader.deleteManyCustomers(db,docsCustomer);
+        GraphLoader graphLoader = new GraphLoader(db);
+        graphLoader.createEdgeProductTag();
         */
 
 
-
-
-
-
-        /* ------------------------ */
-        /* --- TESTS 4.4 VENDORS -- */
-        /* ------------------------ */
-
-       /* ODocument docVendor1 = new ODocument("VendorVertex");
-        docVendor1.field("Vendor", "EvaShop");
-        docVendor1.field("Country", "Romania");
-        docVendor1.field("Industry", "Clothes");
-
-        ODocument docVendor2 = new ODocument("VendorVertex");
-        docVendor2.field("Vendor", "EvaShop");
-        docVendor2.field("Country", "Romania");
-        docVendor2.field("Industry", "Sports");
-
-        ODocument docVendor3 = new ODocument("VendorVertex");
-        docVendor3.field("Vendor", "MiaShop");
-        docVendor3.field("Country", "France");
-        docVendor3.field("Industry", "Sports");
-
-        List<ODocument> docsVendor = new ArrayList<ODocument>();
-        docsVendor.add(docVendor2);
-        docsVendor.add(docVendor3);
-
-        /*
-        vendorLoader.insertOneVendor(db,docVendor1);
-        vendorLoader.updateOneVendor(db,docVendor2);
-        vendorLoader.deleteOneVendor(db,docVendor3);
-
-        vendorLoader.insertManyVendors(db,docsVendor);
-        vendorLoader.updateManyVendors(db,docsVendor);
-        vendorLoader.deleteManyVendors(db,docsVendor);
-         */
-
-
-
-        /*** 4.4 Graph ****/
-        /*GraphLoader graphLoader = new GraphLoader(db);
-
-        /* Créer un post
+        // Créer un post
+            /*
         graphLoader.createPost("1399511627255", "image.png",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-11-18 07:13:13.099+0000"),
-                "43.290.55.178","Chrome", "fr", "A new post", "350");
+                "43.290.55.178", "Chrome", "fr", "A new post", "350");
 
-         Mise à jour post
+        // Mise à jour post
         ODocument post = new ODocument("Post");
-        post.field("idPost","1399511627255");
-        post.field("imageFile","anotherImage.png");
+        post.field("idPost", "1399511627255");
+        post.field("imageFile", "anotherImage.png");
         post.field("creationDate",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-12-23 09:13:13.099+0000"));
-        post.field("locationIP","43.290.55.178");
-        post.field("browerUsed","Opera");
-        post.field("language","SP");
-        post.field("content","A new post 2");
-        post.field("length","890");
+        post.field("locationIP", "43.290.55.178");
+        post.field("browerUsed", "Opera");
+        post.field("language", "SP");
+        post.field("content", "A new post 2");
+        post.field("length", "890");
 
-        graphLoader.updatePost(post);*/
+        graphLoader.updatePost(post);
+
+        post.delete().save();
+*/
+
+
+        /** Query 4 **/
+
+
+        //Main.query4(db);
+
+            /** Query 6 **/
+
+          /*  OVertex customer1 = null;
+            OVertex customer2 = null;
+                String query = "SELECT * FROM Customer LIMIT 20";
+                OResultSet rs = db.query(query);
+                List<OVertex> customersList = rs.vertexStream().toList();
+                customer1 = customersList.get(0);
+                customer2 = customersList.get(7);
+                rs.close();
+
+            Main.query6(db, customer1, customer2);
+           */
+            Main.query10(db);
     }
-
 
 
 }

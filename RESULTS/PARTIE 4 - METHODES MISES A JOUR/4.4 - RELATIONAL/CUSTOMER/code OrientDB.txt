@@ -1,0 +1,123 @@
+// EVA RADU
+
+// PARTIE 4.4 - Requêtes CRUD Customers
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION D'UN CLIENT : 
+
+INSERT INTO Customer SET id="007", firstName="Eva", lastName="Radu", gender="female", birthday="2001-02-26", creationDate="2022-06-13T02:10:23.099+0000", locationIP="27.98.237.197", browserUsed="Opera", place="2037"
+
+// RESULTAT : 
+
+Inserted record '[Customer#80:1243{id:007,firstName:Eva,lastName:Radu,gender:female,birthday:2001-02-26,creationDate:2022-06-13T02:10:23.099+0000,locationIP:27.98.237.197,browserUsed:Opera,place:2037} v1]' in 0.081000 sec(s).
+
+// VERIFICATION : 
+
+SELECT * FROM Customer WHERE lastName="Radu"
+
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|#   |@RID    |@CLASS  |lastName|id  |firstName|gender|birthday  |creationDate                |locationIP   |browserUsed|place|
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|0   |#80:1243|Customer|Radu    |007 |Eva      |female|2001-02-26|2022-06-13T02:10:23.099+0000|27.98.237.197|Opera      |2037 |
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// MISE A JOUR D'UN CLIENT :
+
+UPDATE Customer SET browserUsed="Firefox" WHERE lastName="Radu"
+
+// RESULTAT : 
+
+Updated record(s) '[{count:1}]' in 0.207000 sec(s).
+
+// VERIFICATION : 
+
+SELECT * FROM Customer WHERE lastName="Radu"
+
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|#   |@RID    |@CLASS  |lastName|id  |firstName|gender|birthday  |creationDate                |locationIP   |browserUsed|place|
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|0   |#80:1243|Customer|Radu    |007 |Eva      |female|2001-02-26|2022-06-13T02:10:23.099+0000|27.98.237.197|Firefox    |2037 |
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION D'UN CLIENT : 
+
+DELETE VERTEX FROM Customer WHERE @Rid="#80:1243"
+
+// RESULTAT : 
+
+Delete record(s) '[{count:1}]' in 0.225000 sec(s).
+
+// VERIFICATION : 
+
+SELECT * FROM Customer WHERE lastName="Radu"
+
+0 item(s) found. Query executed in 0.164 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION DE PLUSIEURS CLIENTS 
+
+INSERT INTO Customer (id, firstName,lastName, gender, birthday, creationDate, locationIP, browserUsed, place) VALUES ("007", "Eva", "Radu","female","2001-02-26", "2022-06-13T02:10:23.099+0000", "27.98.237.197", "Opera", "2037"), ("008", "Mia","Swery","female","2000-04-16", "2022-06-13T02:10:23.099+0000", "27.98.237.197", "Opera", "2037")
+
+// RESULTAT 
+
+Inserted record '[Customer#74:1245{id:007,firstName:Eva,lastName:Radu,gender:female,birthday:2001-02-26,creationDate:2022-06-13T02:10:23.099+0000,locationIP:27.98.237.197,browserUsed:Opera,place:2037} v1, Customer#75:1245{id:008,firstName:Mia,lastName:Swery,gender:female,birthday:2000-04-16,creationDate:2022-06-13T02:10:23.099+0000,locationIP:27.98.237.197,browserUsed:Opera,place:2037} v1]' in 0.021000 sec(s).
+
+// VERIFICATION
+
+SELECT * FROM Customer WHERE lastName="Radu" or lastName="Swery"
+
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|#   |@RID    |@CLASS  |lastName|id  |firstName|gender|birthday  |creationDate                |locationIP   |browserUsed|place|
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|0   |#74:1245|Customer|Radu    |007 |Eva      |female|2001-02-26|2022-06-13T02:10:23.099+0000|27.98.237.197|Opera      |2037 |
+|1   |#75:1245|Customer|Swery   |008 |Mia      |female|2000-04-16|2022-06-13T02:10:23.099+0000|27.98.237.197|Opera      |2037 |
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// MODIFICATION DE PLUSIEURS CLIENTS 
+
+UPDATE Customer SET browserUsed="Firefox" WHERE lastName="Radu" or lastName="Swery"
+
+// RESULTAT 
+
+Updated record(s) '[{count:2}]' in 0.269000 sec(s).
+
+// VERIFICATION 
+
+SELECT * FROM Customer WHERE lastName="Radu" or lastName="Swery"
+
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|#   |@RID    |@CLASS  |lastName|id  |firstName|gender|birthday  |creationDate                |locationIP   |browserUsed|place|
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+|0   |#74:1245|Customer|Radu    |007 |Eva      |female|2001-02-26|2022-06-13T02:10:23.099+0000|27.98.237.197|Firefox    |2037 |
+|1   |#75:1245|Customer|Swery   |008 |Mia      |female|2000-04-16|2022-06-13T02:10:23.099+0000|27.98.237.197|Firefox    |2037 |
++----+--------+--------+--------+----+---------+------+----------+----------------------------+-------------+-----------+-----+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION DE PLUSIEURS CLIENTS
+
+DELETE VERTEX FROM Customer WHERE lastName="Radu" or lastName="Swery"
+
+// RESULTAT
+
+Delete record(s) '[{count:2}]' in 0.305000 sec(s).
+
+// VERIFICATION 
+
+SELECT * FROM Customer WHERE lastName="Radu" or lastName="Swery"
+
+
+0 item(s) found. Query executed in 0.117 sec(s).
+
+
+
+

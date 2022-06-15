@@ -1,0 +1,89 @@
+// KHAOULA BHOULAL
+
+public class FeedbackLoader {
+
+    ODatabaseSession db;
+
+    public FeedbackLoader(ODatabaseSession db){
+        this.db = db;
+    }
+    public void chargementFeedback(){
+
+        if (this.db.getClass("Feedback") == null) {
+            OClass feedback = this.db.createEdgeClass("Feedback");
+            feedback.createProperty("productAsin", OType.STRING);
+            feedback.createProperty("personID", OType.STRING);
+            feedback.createProperty("comment", OType.STRING);
+            feedback.createIndex("feedback_index", OClass.INDEX_TYPE.UNIQUE, "productAsin", "personID");
+        }
+
+        List<List<String>> records = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Feedback/Feedback.csv"),'|');) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        for(int p=1; p<records.size(); p++){
+
+            String query = "SELECT * from Product where asin = ?";
+            OResultSet productAsinres = this.db.query(query, records.get(p).get(0));
+            Optional<OElement> productOptional = productAsinres.elementStream().findFirst();
+            OElement product = productOptional.get();
+
+            String query2 = "SELECT * from Customer where id = ?";
+            OResultSet customerIDres = this.db.query(query2, records.get(p).get(1));
+            Optional<OElement> customerOptional = customerIDres.elementStream().findFirst();
+            OElement customer = customerOptional.get();
+
+            String feedbackRecord = records.get(p).get(2);
+
+            creerFeedback((OVertex) product, records.get(p).get(0), (OVertex) customer, records.get(p).get(1), feedbackRecord);
+        }
+    }
+
+    private void creerFeedback(OVertex product, String productAsin,OVertex person, String customerId, String feedback) {
+        OEdge feedbackClass = this.db.newEdge(person, product, "Feedback");
+        feedbackClass.setProperty("productAsin", productAsin);
+        feedbackClass.setProperty("personID", customerId);
+        feedbackClass.setProperty("comment", feedback);
+        feedbackClass.save();
+    }
+}
+
+/*
+RESULTATS 
+
+SELECT * FROM Feedback LIMIT 20
+
++----+------+--------+--------+--------+---------+---------+--------------------------------------------------------------------------------------------------+
+|#   |@RID  |@CLASS  |in      |out     |productAs|personID |comment                                                                                           |
++----+------+--------+--------+--------+---------+---------+--------------------------------------------------------------------------------------------------+
+|0   |#82:0 |Feedback|#40:272 |#74:629 |B005FU...|175921...|5.0,This feels just like a dart board you would use in a bar, minus the 1,000 holes that other ...|
+|1   |#82:1 |Feedback|#38:1189|#78:784 |B003D9...|175921...|5.0,Im not sure why the Sapien isnt more popular as it seems to not get mentioned very often, w...|
+|2   |#82:2 |Feedback|#38:1189|#74:173 |B003D9...|219902...|5.0,Man....I can     believe this only cost $25 bucks. The handle was flush, I cut myself taking i...|
+|3   |#82:3 |Feedback|#38:1189|#79:337 |B003D9...|439804...|4.0,Putting aside the funky name, this knife is a solid value.  Fits well in hand just keep the...|
+|4   |#82:4 |Feedback|#38:1189|#77:192 |B003D9...|219902...|1.0,First of all let me say that I love Condor products. I own a few of their knives, an axe an...|
+|5   |#82:5 |Feedback|#38:1189|#76:1136|B003D9...|263882...|1.0,First of all let me say that I love Condor products. I own a few of their knives, an axe an...|
+|6   |#82:6 |Feedback|#38:1189|#79:1146|B003D9...|659706...|5.0,EXCELLENT quality knife!!If you are looking for a good SMALL knife for an everyday carry st...|
+|7   |#82:7 |Feedback|#38:1189|#75:70  |B003D9...|307863...|4.0,Putting aside the funky name, this knife is a solid value.  Fits well in hand just keep the...|
+|8   |#82:8 |Feedback|#38:1189|#77:703 |B003D9...|241892...|5.0,I love this little knife. The only thing I would change is a better grip or way your hand w...|
+|9   |#82:9 |Feedback|#38:1189|#75:1182|B003D9...|307863...|5.0,I wanted a full tang Mora and thats what this is. Its slightly thicker than the Mora Heavy ...|
+|10  |#82:10|Feedback|#38:1189|#74:571 |B003D9...|219902...|4.0,This knife is better than I was expecting being so cheap in comparison with similar knives....|
+|11  |#82:11|Feedback|#38:1189|#80:739 |B003D9...|329853...|5.0,Mine wasnt super sharp out of the box but it didnt take much to make it shaving sharp. I la...|
+|12  |#82:12|Feedback|#38:1189|#76:440 |B003D9...|153931...|5.0,Man....I can     believe this only cost $25 bucks. The handle was flush, I cut myself taking i...|
+|13  |#82:13|Feedback|#38:1189|#81:915 |B003D9...|219902...|4.0,Putting aside the funky name, this knife is a solid value.  Fits well in hand just keep the...|
+|14  |#82:14|Feedback|#38:1189|#77:614 |B003D9...|439804...|5.0,Mine wasnt super sharp out of the box but it didnt take much to make it shaving sharp. I la...|
+|15  |#82:15|Feedback|#38:1121|#78:1085|B000F3...|109951...|3.0,Seems to be holding up well during the softball season but not just anyone can fold it up p...|
+|16  |#82:16|Feedback|#35:366 |#80:313 |B001C7...|219902...|5.0,For the price, you cannot touch this scope. It is fun to use and definately offers an advan...|
+|17  |#82:17|Feedback|#35:366 |#74:939 |B001C7...|329853...|2.0,Got the NVRS in several weeks ago, bore sighted and laser sighted it in at the house at 60 ...|
+|18  |#82:18|Feedback|#35:366 |#81:319 |B001C7...|219902...|5.0,The scope is smaller and lighter than most Gen 1 says it all. I ""think"" it\s the smallest...|
+|19  |#82:19|Feedback|#35:366 |#80:944 |B001C7...|197912...|5.0,It takes some getting used to but worked fine. Saw deer eating apples , they didnt know we ...|
++----+------+--------+--------+--------+---------+---------+--------------------------------------------------------------------------------------------------+
+
+20 item(s) found. Query executed in 0.008 sec(s).
+
+*/

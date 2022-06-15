@@ -1,0 +1,66 @@
+HasInterest (Edge) arc
+De même que les autre Edges / Arcs
+
+1) On crée la classe type Edge
+
+      if (db.getClass("HasInterest") == null) {
+            OClass hasInterest = db.createEdgeClass("HasInterest");
+            hasInterest.createProperty("idPerson", OType.STRING);
+            hasInterest.createProperty("idTag", OType.STRING);
+            hasInterest.createIndex("hasinterest_index", OClass.INDEX_TYPE.NOTUNIQUE_HASH_INDEX, "idPerson", "idTag");
+        }
+
+
+2) On charge les données de CSV
+      List<List<String>> records6 = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/SocialNetwork/person_hasInterest_tag_0_0.csv"))) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records6.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+3) On prépare les données pour crée l'entité dans la base
+
+  private void loadHasInterest(List<List<String>> records) throws ParseException {
+        for (int p = 1; p < records.size(); p++) {
+            String[] line = records.get(p).toString().split("\\|");
+
+            line[0] = line[0].replace("[", "");
+            line[line.length - 1] = line[line.length - 1].replace("]", "");
+
+            ArrayList<String> lineArray = new ArrayList<>(Arrays.asList(line));
+            String idPerson = lineArray.get(0);
+            String idTag = lineArray.get(1);
+
+            String query1 = "SELECT * from Customer where id = ?";
+            OResultSet rs1 = db.query(query1, idPerson);
+            Optional<OVertex> optionalID = rs1.vertexStream().findFirst();
+            OVertex refPerson = optionalID.get();
+
+            String query2 = "SELECT * from Tag where idTag = ?";
+            OResultSet rs2 = db.query(query2, idTag);
+            Optional<OVertex> optionalID2 = rs2.vertexStream().findFirst();
+            OVertex refTag = optionalID2.get();
+
+            String query = "SELECT * from HasInterest where idPerson = ? and idTag = ? ";
+            OResultSet rs = db.query(query, idPerson, idTag);
+
+            boolean createOrnot = rs.elementStream().count() == 0;
+            if (createOrnot) {
+                createHasInterest(refPerson, refTag);
+            }
+        }
+    }
+
+
+4) On crée l'arc HasInterest dans la base de données et persite avec save()
+
+    private void createHasInterest(OVertex idPerson, OVertex idTag) {
+        OElement hasInterest = db.newEdge(idPerson, idTag, "HasInterest");
+        hasInterest.setProperty("idPerson", idPerson.getProperty("id"));
+        hasInterest.setProperty("idTag", idTag.getProperty("idTag"));
+        hasInterest.save();
+    }

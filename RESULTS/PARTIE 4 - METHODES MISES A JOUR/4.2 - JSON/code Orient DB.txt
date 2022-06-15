@@ -1,0 +1,120 @@
+// HUGO BULZOMI 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION D'UN ORDER :
+INSERT INTO Order (PersonId,TotalPrice,OrderId,OrderDate) VALUES ("123","400","00","2015-04-04")
+
+// RESULTAT :
+Inserted record '[Order#42:17783{PersonId:123,TotalPrice:400.0,OrderId:00,OrderDate:2015-04-04} v1]' in 0.017000 sec(s).
+
+// VERIFICATION 
+SELECT * FROM Order WHERE OrderId="00"
+
++----+---------+------+-------+--------+----------+----------+
+|#   |@RID     |@CLASS|OrderId|PersonId|TotalPrice|OrderDate |
++----+---------+------+-------+--------+----------+----------+
+|0   |#42:17783|Order |00     |123     |400.0     |2015-04-04|
++----+---------+------+-------+--------+----------+----------+
+
+1 item(s) found. Query executed in 1.212 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// MODIFICATION D'UN ORDER :
+UPDATE Order SET TotalPrice="600" WHERE OrderId="00"
+
+// RESULTAT
+
+Updated record(s) '[{count:1}]' in 1.135000 sec(s).
+
+// VERIFICATION
+SELECT * FROM Order WHERE OrderId="00"
+
++----+---------+------+-------+--------+----------+----------+
+|#   |@RID     |@CLASS|OrderId|PersonId|TotalPrice|OrderDate |
++----+---------+------+-------+--------+----------+----------+
+|0   |#42:17783|Order |00     |123     |600.0     |2015-04-04|
++----+---------+------+-------+--------+----------+----------+
+
+1 item(s) found. Query executed in 1.107 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION D'UN ORDER:
+
+DELETE VERTEX Order WHERE OrderId="00"
+
+// RESULTAT
+
+Delete record(s) '[{count:1}]' in 1.178000 sec(s).
+
+// VERIFICATION
+SELECT * FROM Order WHERE OrderId="00"
+
+0 item(s) found. Query executed in 1.221 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// INSERTION DE PLUSIEURS ORDERS :
+INSERT INTO Order (PersonId,TotalPrice,OrderId,OrderDate) VALUES ("123","400","00","2015-04-04"),("124","300","000","2013-06-01")
+
+// RESULTAT 
+
+Inserted record '[Order#43:17782{PersonId:123,TotalPrice:400.0,OrderId:00,OrderDate:2015-04-04} v1, Order#44:17782{PersonId:124,TotalPrice:300.0,OrderId:000,OrderDate:2013-06-01} v1]' in 0.048000 sec(s).
+
+// VERIFICATION 
+
+ SELECT * FROM Order WHERE OrderId="00" or OrderId="000"
+
++----+---------+------+-------+--------+----------+----------+
+|#   |@RID     |@CLASS|OrderId|PersonId|TotalPrice|OrderDate |
++----+---------+------+-------+--------+----------+----------+
+|0   |#43:17782|Order |00     |123     |400.0     |2015-04-04|
+|1   |#44:17782|Order |000    |124     |300.0     |2013-06-01|
++----+---------+------+-------+--------+----------+----------+
+
+2 item(s) found. Query executed in 1.237 sec(s).
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// UPDATE DE PLUSIEURS ORDERS :
+
+UPDATE Order SET TotalPrice="600" WHERE OrderId="00" or OrderId="000"
+
+
+// RESULTAT
+Updated record(s) '[{count:2}]' in 1.438000 sec(s).
+
+// VERIFICATION
+
+SELECT * FROM Order WHERE OrderId="00" or OrderId="000"
+
++----+---------+------+-------+--------+----------+----------+
+|#   |@RID     |@CLASS|OrderId|PersonId|TotalPrice|OrderDate |
++----+---------+------+-------+--------+----------+----------+
+|0   |#43:17782|Order |00     |123     |600.0     |2015-04-04|
+|1   |#44:17782|Order |000    |124     |600.0     |2013-06-01|
++----+---------+------+-------+--------+----------+----------+
+
+2 item(s) found. Query executed in 1.349 sec(s).
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// SUPPRESSION DE PLUSIEURS ORDERS :
+
+DELETE VERTEX Order WHERE OrderId="00" or OrderId="000"
+
+// RESULTATS
+Delete record(s) '[{count:2}]' in 1.240000 sec(s).
+
+// VERIFICATION 
+DELETE VERTEX Order WHERE OrderId="00" or OrderId="000"
+
+Delete record(s) '[{count:0}]' in 1.242000 sec(s).
+
+
+
+
+
+
+

@@ -1,0 +1,21 @@
+Pour créer une relation entre Product et Tag on a fait une relation par hasard
+puisqu'on n'a pas de données qui relient les deux ensemble
+
+public void createEdgeProductTag(){
+        String query = "SELECT * from Product";
+        OResultSet rs = db.query(query);
+
+        String queryTag = "SELECT * from Tag ORDER BY name ASC";
+        OResultSet rsTags = db.query(queryTag);
+
+        if(db.getClass("ProductTag") == null){
+            db.createEdgeClass("ProductTag");
+        }
+
+        while (rs.hasNext()) {
+            OVertex newProduct = rs.next().getVertex().get();
+
+            newProduct.addEdge(rsTags.next().getVertex().get(), "ProductTag");
+            newProduct.save();
+        }
+    }
