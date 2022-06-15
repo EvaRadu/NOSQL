@@ -1,16 +1,24 @@
-La première étape est de calculer la somme de TotalPrice de des Orders et on groupe par Customer/Person
-et on prend les 2 premiers après faire ORDER BY
+// MOKHTAR SAMY
 
-On Traverse la graphe en sortant de l'Edge Knows et on parcours le graph en faisant 
+// EXPLICATION
+
+/*
+La première étape est de calculer la somme de TotalPrice de des Orders et on groupe par Customer/Person
+et on prend les 2 premiers après avoir fait ORDER BY
+
+On Traverse le graphe en sortant de l'Edge Knows et on parcours le graph en faisant
 Depth limited search avec un Depth maximum de longeur 3
-Pour les 2 customers trouvé au début
+Pour les 2 customers trouvés au début
 
 On cherche l'intersection entre les 2 résultats
 
 On récupère ce résultat qui contient des références vers les amis en commun et on affiche leurs nom et prénom
 
-OrientDb déjà a une fonction Traverse() pour parcourir un Graph
+OrientDb a déjà une fonction Traverse() pour parcourir un Graph
 et intersect pour trouver les valeurs en commun entre 2 résultats
+*/
+
+// CODE :
 
  public static void query4(ODatabaseSession db) {
         /**

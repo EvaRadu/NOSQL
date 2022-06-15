@@ -1,9 +1,19 @@
-Premièrement on cherce le chemin le plus court entre les deux personnes données
+// MOKHTAR SAMY
 
-Après on prend le résultat et on leur achats effectués dans Order, on compte la fréquences des produits
-dans leurs liste des achats, et on prends les 3 produits avec le plus de fréquence
+// EXPLICATION :
 
-OrientDb déjà a une fonction shortestPath() pour calculer le chemin le plus court
+/*
+
+Premièrement on cherche le plus court chemin entre deux personnes données.
+
+Après on prend le résultat et leur achats effectués dans Order, on compte la fréquence des produits
+dans leurs liste d'achats, et on prend les 3 produits avec le plus de fréquence.
+
+OrientDb a déjà une fonction shortestPath() pour calculer le plus court chemin
+
+*/
+
+// CODE :
 
 public static void query6(ODatabaseSession db, OVertex customer1, OVertex customer2) {
     /**
