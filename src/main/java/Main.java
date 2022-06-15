@@ -286,6 +286,15 @@ public class Main {
         return res;
     }
 
+    /*
+    Query 9. Find top-3 companies who have the largest amount of sales at one country, for each
+    company, compare the number of the male and female customers, and return the most recent
+    posts of them.
+    */
+    public static void query9(ODatabaseSession db, String Country) throws ParseException {
+
+    }
+
 
     /*
         Query 8 :
