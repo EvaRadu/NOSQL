@@ -185,6 +185,37 @@ public class Main {
             feedbackRes.add(optional2.getProperty("personID").toString());
         }
 
+
+        // GETTING THE TAGS OF THE PRODUCT
+        String queryTag = "SELECT OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+        OResultSet rsTag = db.query(queryTag, idProduct);
+        ArrayList<String> tagRes = new ArrayList<>();
+        while(rsTag.hasNext()) {
+            OResult optional3 = rsTag.next();
+            tagRes.addAll(optional3.getProperty("OUT(\"ProductTag\").idTag"));
+        }
+
+        // GETTING THE POSTS RELATED OF THE TAGS
+        String queryPost = "SELECT idPost FROM `HasTag` WHERE idTag=?";
+        ArrayList<String> postRes = new ArrayList<>();
+        for(String tag : tagRes){
+            OResultSet rsPost = db.query(queryPost, tag);
+            postRes.add(rsPost.next().getProperty("idPost").toString());
+        }
+
+        // GETTING THE CUSTOMERS WHO CREATED THESE POSTS AND CHECKING IF IT'S IN THE CORRECT PERIOD
+        String queryCustomerPost = "select creationDate, OUT(\"HasCreated\").id from `Post` where idPost=? and creationDate between ? and ?";
+        ArrayList<String> customerPostRes = new ArrayList<>();
+        for(String post : postRes){
+            OResultSet rsCustomerPost = db.query(queryCustomerPost, post, startDate, endDate);
+            while(rsCustomerPost.hasNext()) {
+                customerPostRes.addAll(rsCustomerPost.next().getProperty("OUT(\"HasCreated\").id"));
+            }
+        }
+
+
+
+
         // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
         ArrayList<String> finalOrderRes = new ArrayList<>();
 
@@ -198,10 +229,15 @@ public class Main {
         }
 
         // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
-        // AND HAD COMMENTED IT
+        // AND HAD COMMENTED IT OR POSTED ON IT
 
         ArrayList<String> finalRes = new ArrayList<>();
         for(String s : feedbackRes){
+            if(finalOrderRes.contains(s)){
+                finalRes.add(s);
+            }
+        }
+        for(String s : customerPostRes){
             if(finalOrderRes.contains(s)){
                 finalRes.add(s);
             }
@@ -220,6 +256,16 @@ public class Main {
         }
 
         System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("          CUSTOMERS WHO POSTED ON THE PRODUCT IN THE SPECIFIED PERIOD :        ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : customerPostRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("-------------------------------------------------------------------------------");
         System.out.println("           CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD :         ");
         System.out.println("-------------------------------------------------------------------------------");
 
@@ -229,16 +275,16 @@ public class Main {
             System.out.println(r1.elementStream().findFirst().get());
         }
 
-        System.out.println("-------------------------------------------------------------------------------");
-        System.out.println("   CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD AND COMMENTED IT  ");
-        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------------------");
+        System.out.println("   CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD AND COMMENTED OR POSTED ON IT  ");
+        System.out.println("--------------------------------------------------------------------------------------------");
 
         for (String s : finalRes) {
             String q1 = "SELECT * from Customer where id = ?";
             OResultSet r1 = db.query(q1, s);
             System.out.println(r1.elementStream().findFirst().get());
         }
-        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------------------");
 
     }
 
@@ -293,32 +339,54 @@ public class Main {
          For all the products of a given category during a given year, compute its total sales
          amount, and measure its popularity in the social media.
     */
-    public static void query8(ODatabaseSession db, String year) throws ParseException {
+    public static void query8(ODatabaseSession db, String year, String category) throws ParseException {
+        String query1 = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
+        OResultSet rs = db.query(query1);
 
-        String queryDate = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
-        OResultSet rs = db.query(queryDate);
 
         while(rs.hasNext()) {
             OResult optional = rs.next();
             ArrayList<String> currentDates = optional.getProperty("IN(\"Orderline\").OrderDate");
             ArrayList<Float> currentAmounts = optional.getProperty("IN(\"Orderline\").TotalPrice");
+            String currentAsin = optional.getProperty("asin");
+            ArrayList<String> resDates = new ArrayList<>();
             ArrayList<Float> resAmounts = new ArrayList<>();
             float totalSales = 0;
 
             if(!currentDates.isEmpty()){
 
+                // STEP 1 : FILTERING THE DATES
                 for(int i = 0; i<currentDates.size(); i++){
                     Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(year+"-12-31"));
                     Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(year+"-01-01").before( new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))));
-                    if(bool&&bool2) { // FILTERING THE DATES
+                    if(bool&&bool2) {
+                        resDates.add(currentDates.get(i));
                         resAmounts.add(currentAmounts.get(i));
                     }
                 }
-                for(Float money : resAmounts){
-                    totalSales = totalSales + money;
+
+                // STEP 2 : FILTERING THE CATEGORIES
+                String query2 = "SELECT asin, OUT(\"ProductTag\").name, OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+                OResultSet rs2 = db.query(query2,currentAsin);
+                OResult optional2 = rs2.next();
+                ArrayList<String> currentCategories = optional2.getProperty("OUT(\"ProductTag\").name");
+                ArrayList<String> currentPost = optional2.getProperty("OUT(\"ProductTag\").idTag");
+
+                if(currentCategories.contains(category)){
+                    for(Float money : resAmounts){
+                        totalSales = totalSales + money;
+                    }
+
+                    System.out.println("FOR THE PRODUCT n° " + currentAsin);
+                    System.out.println("------ DURING THE YEAR                :  " + year);
+                    System.out.println("------ BEING IN THE CATEGORY          :  " + category);
+                    System.out.println("------ TOTAL SALES AMOUNT             :  " + totalSales);
+                    System.out.println("------ POPULARITY IN THE SOCIAL MEDIA :  " + currentPost.size() + " posts");
+
                 }
 
-                System.out.println("TOTAL SALES AMOUT FOR PRODUCT n° " + optional.getProperty("asin") + " DURING " + year + " = " + totalSales);
+
+
             }
         }
     }
@@ -340,18 +408,18 @@ public class Main {
         // QUERY 1
 
 
-        request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
-        System.out.println("done!");
-        db.close();
+        //request1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
+       // System.out.println("done!");
+        //db.close();
 
 
 
         // QUERY 2
-        //query2(db,"B005FUKW6M","2018-12-18", "2021-01-18");
+        //query2(db,"B005FUKW6M","2001-12-18", "2021-01-18");
 
 
-            //QUERY 8
-            query8(db,"2018");
+        //QUERY 8
+        //query8(db,"2018", " Levis");
 
 
 
