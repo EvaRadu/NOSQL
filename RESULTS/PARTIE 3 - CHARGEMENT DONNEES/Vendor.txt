@@ -1,0 +1,134 @@
+// EVA RADU
+
+public class VendorLoader {
+
+    ODatabaseSession db;
+
+    public VendorLoader(ODatabaseSession db) {
+        this.db = db;
+    }
+
+    public void load() {
+        if (this.db.getClass("VendorVertex") == null) {
+            OClass vendor = this.db.createVertexClass("VendorVertex");
+            vendor.createProperty("Vendor", OType.STRING);
+            vendor.createProperty("Country", OType.STRING);
+            vendor.createProperty("Industry", OType.STRING);
+            vendor.createIndex("vendor_index", OClass.INDEX_TYPE.UNIQUE, "Vendor");
+        }
+
+
+        // Loading the csv vendor into a list of list of String
+        List<List<String>> records = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Vendor/Vendor.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Line 0 only contains the columns names, so we start at line 1
+        for (int p = 1; p < records.size(); p++) {
+            // We check if the vendor already exists before adding it
+            String query = "SELECT * from VendorVertex where Vendor = ?";
+            OResultSet rs = this.db.query(query, records.get(p).get(0));
+            if (rs.elementStream().count() == 0) {
+                createVendor(this.db, records.get(p).get(0), records.get(p).get(1), records.get(p).get(2));
+            }
+        }
+
+        /*
+        // EDGE VENDOR / PRODUCT
+
+        if (this.db.getClass("edgeVendorProduct") == null) {
+            OClass edgeVendorProduct = this.db.createEdgeClass("edgeVendorProduct");
+            edgeVendorProduct.createProperty("idVendor", OType.STRING);
+            edgeVendorProduct.createProperty("idProduct", OType.STRING);
+            edgeVendorProduct.createIndex("edgeVendorProduct_index", OClass.INDEX_TYPE.UNIQUE, "idVendor");
+        }
+
+
+
+        // Loading the csv product into a list of list of String
+        List<List<String>> records2 = new ArrayList<List<String>>();
+        try (CSVReader csvReader = new CSVReader(new FileReader("DATA/Product/BrandByProduct.csv"));) {
+            String[] values = null;
+            while ((values = csvReader.readNext()) != null) {
+                records2.add(Arrays.asList(values));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Line 0 only contains the columns names, so we start at line 1
+        for(int p=1; p<records2.size(); p++){
+            // We check if the vendor already exists before adding it
+            String query = "SELECT * from VendorVertex where vendor = ?";
+            OResultSet rs = this.db.query(query, records2.get(p).get(0));
+            if(rs.elementStream().count()==0) {
+
+            }
+            OVertex vendor = (OVertex) rs.elementStream().findFirst().get();
+
+
+            String query2 = "SELECT * from Product where asin = ?";
+            OResultSet rs2 = this.db.query(query2, records2.get(p).get(1));
+            OVertex product = (OVertex) rs2.elementStream().findFirst().get();
+            //System.out.println(rs2.elementStream().count());
+            if ((rs2.elementStream().count() == 0)&&(rs.elementStream().count() == 0) ){
+                createEdgeVendorProduct(this.db, vendor,  product);
+            }
+
+
+            */
+        System.out.println("The Vendors have been loaded");
+    }
+
+    private static OElement createVendor(ODatabaseSession db, String vendor, String country, String industry) {
+        OElement result = db.newVertex("VendorVertex");
+        result.setProperty("Vendor", vendor);
+        result.setProperty("Country", country);
+        result.setProperty("Industry", industry);
+        result.save();
+        return result;
+    }
+
+    private static void createEdgeVendorProduct(ODatabaseSession db, OVertex vendor, OVertex product) {
+        vendor.addEdge(product, "edgeVendorProduct").save();
+        db.commit();
+    }
+}
+
+/* RESULTATS : 
+
+SELECT * FROM VendorVertex
+
++----+-----+------------+--------+-------------------------------------------------------------------------------------+---------+-----------------------------+
+|#   |@RID |@CLASS      |Industry|in_IsFromBrand                                                                       |Country  |Vendor                       |
++----+-----+------------+--------+-------------------------------------------------------------------------------------+---------+-----------------------------+
+|0   |#26:0|VendorVertex|Sports  |[#50:0,#50:1,#50:2,#50:152,#50:153,#50:303,#50:304,#50:305,#50:455,#50:456(more)]    |Argentina|Signia_(sportswear)          |
+|1   |#26:1|VendorVertex|Sports  |[#50:3,#50:4,#50:154,#50:155,#50:156,#50:306,#50:307,#50:457,#50:458,#50:459(more)]  |Australia|Elfin_Sports_Cars            |
+|2   |#26:2|VendorVertex|Sports  |[#50:5,#50:6,#50:7,#50:157,#50:158,#50:308,#50:309,#50:310,#50:460,#50:461(more)]    |Australia|International_Sports_Clothing|
+|3   |#26:3|VendorVertex|Sports  |[#50:8,#50:9,#50:159,#50:160,#50:311,#50:312,#50:462,#50:463,#50:613,#50:614(more)]  |Australia|Alpha_Sports                 |
+|4   |#26:4|VendorVertex|Sports  |[#50:10,#50:11,#50:161,#50:162,#50:163,#50:313,#50:314,#50:464,#50:465,#50:466(more)]|Australia|Nomis                        |
+|5   |#26:5|VendorVertex|Sports  |[#50:12,#50:13,#50:14,#50:164,#50:165,#50:315,#50:316,#50:317,#50:467,#50:468(more)] |Austria  |Fischer_(company)            |
+|6   |#26:6|VendorVertex|Sports  |[#50:15,#50:16,#50:166,#50:167,#50:318,#50:319,#50:469,#50:470,#50:620,#50:621(more)]|Belgium  |Donnay_(sports)              |
+|7   |#26:7|VendorVertex|Sports  |[#50:17,#50:18,#50:168,#50:169,#50:170,#50:320,#50:321,#50:471,#50:472,#50:473(more)]|Brazil   |Topper_(sports)              |
+|8   |#27:0|VendorVertex|Sports  |[#50:19,#50:20,#50:21,#50:171,#50:172,#50:322,#50:323,#50:324,#50:474,#50:475(more)] |Brazil   |Penalty_(sports_manufacturer)|
+|9   |#27:1|VendorVertex|Sports  |[#50:22,#50:23,#50:173,#50:174,#50:175,#50:325,#50:326,#50:476,#50:477,#50:478(more)]|Brazil   |Olympikus                    |
+|10  |#27:2|VendorVertex|Sports  |[#50:24,#50:25,#50:176,#50:177,#50:327,#50:328,#50:479,#50:480,#50:630,#50:631(more)]|Bulgaria |TRYMAX                       |
+|11  |#27:3|VendorVertex|Sports  |[#50:26,#50:27,#50:28,#50:178,#50:179,#50:329,#50:330,#50:331,#50:481,#50:482(more)] |Canada   |CCM_(ice_hockey)             |
+|12  |#27:4|VendorVertex|Sports  |[#50:29,#50:30,#50:180,#50:181,#50:182,#50:332,#50:333,#50:483,#50:484,#50:485(more)]|Canada   |Arc'teryx                    |
+|13  |#27:5|VendorVertex|Sports  |[#50:31,#50:32,#50:33,#50:183,#50:184,#50:334,#50:335,#50:336,#50:486,#50:487(more)] |China    |Li-Ning                      |
+|14  |#27:6|VendorVertex|Sports  |[#50:34,#50:35,#50:185,#50:186,#50:337,#50:338,#50:488,#50:489,#50:639,#50:640(more)]|China    |Peak_Sport_Products          |
+|15  |#27:7|VendorVertex|Sports  |[#50:36,#50:37,#50:187,#50:188,#50:189,#50:339,#50:340,#50:490,#50:491,#50:492(more)]|China    |Anta_Sports                  |
+|16  |#28:0|VendorVertex|Sports  |[#50:38,#50:39,#50:40,#50:190,#50:191,#50:341,#50:342,#50:343,#50:493,#50:494(more)] |China    |361_Degrees                  |
+|17  |#28:1|VendorVertex|Sports  |[#50:41,#50:42,#50:192,#50:193,#50:194,#50:344,#50:345,#50:495,#50:496,#50:497(more)]|China    |ERKE_(brand)                 |
+|18  |#28:2|VendorVertex|Sports  |[#50:43,#50:44,#50:195,#50:196,#50:346,#50:347,#50:498,#50:499,#50:649,#50:650(more)]|China    |Sina_Sports                  |
+|19  |#28:3|VendorVertex|Sports  |[#50:45,#50:46,#50:47,#50:197,#50:198,#50:348,#50:349,#50:350,#50:500,#50:501(more)] |England  |Reebok                       |
++----+-----+------------+--------+-------------------------------------------------------------------------------------+---------+-----------------------------+
+LIMIT EXCEEDED: resultset contains more items not displayed (limit=20)
+
+*/

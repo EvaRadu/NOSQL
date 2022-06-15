@@ -1,0 +1,162 @@
+// EVA RADU
+
+    /* --------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE -- */
+    /* --------------------------------------- */
+
+    public static void insertOneCustomer(ODatabaseSession db, ODocument doc) {
+
+        String id = doc.getProperty("id");
+        String firstName = doc.getProperty("firstName");
+        String lastName = doc.getProperty("lastName");
+        String gender = doc.getProperty("gender");
+        String birthday = doc.getProperty("birthday");
+        String creationDate = doc.getProperty("creationDate");
+        String locationIP = doc.getProperty("locationIP");
+        String browserUsed = doc.getProperty("browserUsed");
+        String place = doc.getProperty("place");
+
+        String query = "SELECT * from Customer where id = ?";
+        OResultSet rs = db.query(query, id);
+        if(!rs.elementStream().findFirst().isPresent()) {
+            createCustomer(db, id, firstName, lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
+            System.out.println("The customer " + firstName + " has been inserted");
+        }
+        else{
+            System.out.println("The id " + id + " is already present among the customer vertices");
+        }
+    }
+
+    public static void deleteOneCustomer(ODatabaseSession db, ODocument doc) {
+
+        String id = doc.getProperty("id");
+        String firstName = doc.getProperty("firstName");
+
+        String query = "SELECT * from Customer where id = ?";
+        OResultSet rs = db.query(query, id);
+        Optional customer = rs.elementStream().findFirst();
+        if(customer.isPresent()) {
+            db.delete((OVertex)customer.get());
+            System.out.println("The customer " + firstName + " has been deleted");
+        }
+        else{
+            System.out.println("The customer " + firstName + " is already not present.");
+        }
+    }
+
+    public static void updateOneCustomer(ODatabaseSession db,ODocument doc) {
+
+        String id = doc.getProperty("id");
+        String firstName = doc.getProperty("firstName");
+        String lastName = doc.getProperty("lastName");
+        String gender = doc.getProperty("gender");
+        String birthday = doc.getProperty("birthday");
+        String creationDate = doc.getProperty("creationDate");
+        String locationIP = doc.getProperty("locationIP");
+        String browserUsed = doc.getProperty("browserUsed");
+        String place = doc.getProperty("place");
+
+        String query = "SELECT * from Customer where id = ?";
+        OResultSet rs = db.query(query, id);
+        Optional customer = rs.elementStream().findFirst();
+        if(customer.isPresent()) {
+            OVertex customerVertex =  (OVertex)customer.get();
+            db.delete(customerVertex);
+            createCustomer(db,id,firstName,lastName, gender, birthday, creationDate, locationIP, browserUsed, place);
+
+            System.out.println("The customer " + firstName + " has been updated");
+        }
+        else{
+            System.out.println("The customer " + firstName + " is not present.");
+        }
+    }
+
+    /* ------------------------------------------------------- */
+    /* -- METHODS INSERT, UPDATE AND DELETE FOR MANY VALUES -- */
+    /* ------------------------------------------------------- */
+    public static void insertManyCustomers(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            insertOneCustomer(db, document);
+        }
+    }
+
+    public static void updateManyCustomers(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            updateOneCustomer(db, document);
+        }
+    }
+
+    public static void deleteManyCustomers(ODatabaseSession db, List<ODocument> docs){
+        for(ODocument document : docs){
+            deleteOneCustomer(db, document);
+        }
+    }
+
+
+    public static void testCRUDmethod(ODatabaseSession db) {
+        /* -------------------------- */
+        /* --- TESTS 4.4 CUSTOMERS -- */
+        /* -------------------------- */
+
+        CustomerLoader customerLoader = new CustomerLoader(db);
+
+        ODocument docCustomer1 = new ODocument("Customer");
+        docCustomer1.field("id", "123");
+        docCustomer1.field("firstName", "Eva");
+        docCustomer1.field("lastName", "Radu");
+        docCustomer1.field("gender", "female");
+        docCustomer1.field("birthday", "2001-02-26");
+        docCustomer1.field("creationDate", "2022-06-13T02:10:23.099+0000");
+        docCustomer1.field("locationIP", "27.98.237.197");
+        docCustomer1.field("browserUsed", "Opera");
+        docCustomer1.field("place", "2037");
+
+        ODocument docCustomer2 = new ODocument("Customer");
+        docCustomer2.field("id", "123");
+        docCustomer2.field("firstName", "Eva");
+        docCustomer2.field("lastName", "Radu");
+        docCustomer2.field("gender", "female");
+        docCustomer2.field("birthday", "2001-02-26");
+        docCustomer2.field("creationDate", "2022-06-13T02:10:23.099+0000");
+        docCustomer2.field("locationIP", "27.98.237.197");
+        docCustomer2.field("browserUsed", "Chrome");
+        docCustomer2.field("place", "2037");
+
+        ODocument docCustomer3 = new ODocument("Customer");
+        docCustomer3.field("id", "1234");
+        docCustomer3.field("firstName", "Mia");
+        docCustomer3.field("lastName", "Swery");
+        docCustomer3.field("gender", "female");
+        docCustomer3.field("birthday", "2000-04-16");
+        docCustomer3.field("creationDate", "2022-06-13T02:10:23.099+0000");
+        docCustomer3.field("locationIP", "20.10.458.130");
+        docCustomer3.field("browserUsed", "Firefox");
+        docCustomer3.field("place", "2160");
+
+        List<ODocument> docsCustomer = new ArrayList<ODocument>();
+        docsCustomer.add(docCustomer1);
+        docsCustomer.add(docCustomer3);
+
+
+        customerLoader.insertOneCustomer(db,docCustomer1);
+        customerLoader.updateOneCustomer(db,docCustomer2);
+        customerLoader.deleteOneCustomer(db,docCustomer2);
+
+        customerLoader.insertManyCustomers(db,docsCustomer);
+        customerLoader.updateManyCustomers(db,docsCustomer);
+        customerLoader.deleteManyCustomers(db,docsCustomer);
+
+    }
+
+// RESULTAT DE LA METHODE DE TEST : 
+/*
+The customer Eva has been inserted
+The customer Eva has been updated
+The customer Eva has been deleted
+The customer Eva has been inserted
+The customer Mia has been inserted
+The customer Eva has been updated
+The customer Mia has been updated
+The customer Eva has been deleted
+The customer Mia has been deleted
+*/

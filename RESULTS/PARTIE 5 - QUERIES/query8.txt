@@ -1,3 +1,65 @@
+// EVA RADU
+
+ /*
+        Query 8 :
+         For all the products of a given category during a given year, compute its total sales
+         amount, and measure its popularity in the social media.
+  */
+    public static void query8(ODatabaseSession db, String year, String category) throws ParseException {
+        String query1 = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
+        OResultSet rs = db.query(query1);
+
+
+        while(rs.hasNext()) {
+            OResult optional = rs.next();
+            ArrayList<String> currentDates = optional.getProperty("IN(\"Orderline\").OrderDate");
+            ArrayList<Float> currentAmounts = optional.getProperty("IN(\"Orderline\").TotalPrice");
+            String currentAsin = optional.getProperty("asin");
+            ArrayList<String> resDates = new ArrayList<>();
+            ArrayList<Float> resAmounts = new ArrayList<>();
+            float totalSales = 0;
+
+            if(!currentDates.isEmpty()){
+
+                // STEP 1 : FILTERING THE DATES
+                for(int i = 0; i<currentDates.size(); i++){
+                    Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(year+"-12-31"));
+                    Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(year+"-01-01").before( new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))));
+                    if(bool&&bool2) {
+                        resDates.add(currentDates.get(i));
+                        resAmounts.add(currentAmounts.get(i));
+                    }
+                }
+
+                // STEP 2 : FILTERING THE CATEGORIES
+                String query2 = "SELECT asin, OUT(\"ProductTag\").name, OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+                OResultSet rs2 = db.query(query2,currentAsin);
+                OResult optional2 = rs2.next();
+                ArrayList<String> currentCategories = optional2.getProperty("OUT(\"ProductTag\").name");
+                ArrayList<String> currentPost = optional2.getProperty("OUT(\"ProductTag\").idTag");
+
+                if(currentCategories.contains(category)){
+                    for(Float money : resAmounts){
+                        totalSales = totalSales + money;
+                    }
+
+                    System.out.println("FOR THE PRODUCT n° " + currentAsin);
+                    System.out.println("------ DURING THE YEAR                :  " + year);
+                    System.out.println("------ BEING IN THE CATEGORY          :  " + category);
+                    System.out.println("------ TOTAL SALES AMOUNT             :  " + totalSales);
+                    System.out.println("------ POPULARITY IN THE SOCIAL MEDIA :  " + currentPost.size() + " posts");
+
+                }
+
+
+
+            }
+        }
+    }
+
+
+// RESULTATS
+
 query8(db,"2018", " Levis");
 
 

@@ -1,3 +1,146 @@
+// EVA RADU
+
+ /*
+     QUERY 2 :
+       For a given product during a given period, find the people who commented or
+       posted on it, and had bought it
+ */
+    public static void query2(ODatabaseSession db, String idProduct, String startDate, String endDate) throws ParseException {
+
+        // GETTING THE ORDER DATES OF THE PRODUCT
+        String queryDate = "SELECT IN(\"Orderline\").OrderDate from Product where asin = ?";
+        OResultSet rsDate = db.query(queryDate, idProduct);
+        ArrayList<String> dateRes = new ArrayList<>();
+        while(rsDate.hasNext()) {
+            OResult optional = rsDate.next();
+            dateRes.addAll(optional.getProperty("IN(\"Orderline\").OrderDate"));
+        }
+
+
+        // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT
+        String queryOrder = "SELECT IN(\"Orderline\").PersonId from Product where asin = ?";
+        OResultSet rsOrder = db.query(queryOrder, idProduct);
+        ArrayList<String> orderRes = new ArrayList<>();
+        while(rsOrder.hasNext()) {
+            OResult optional = rsOrder.next();
+            orderRes.addAll(optional.getProperty("IN(\"Orderline\").PersonId"));
+        }
+
+        // GETTING THE CUSTOMERS WHO COMMENTED THE PRODUCT
+        String queryFeedback = "select personID from Feedback where productAsin= ?";
+        OResultSet rsFeedback = db.query(queryFeedback, idProduct);
+        ArrayList<String> feedbackRes = new ArrayList<>();
+        while(rsFeedback.hasNext()) {
+            OResult optional2 = rsFeedback.next();
+            feedbackRes.add(optional2.getProperty("personID").toString());
+        }
+
+
+        // GETTING THE TAGS OF THE PRODUCT
+        String queryTag = "SELECT OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+        OResultSet rsTag = db.query(queryTag, idProduct);
+        ArrayList<String> tagRes = new ArrayList<>();
+        while(rsTag.hasNext()) {
+            OResult optional3 = rsTag.next();
+            tagRes.addAll(optional3.getProperty("OUT(\"ProductTag\").idTag"));
+        }
+
+        // GETTING THE POSTS RELATED OF THE TAGS
+        String queryPost = "SELECT idPost FROM `HasTag` WHERE idTag=?";
+        ArrayList<String> postRes = new ArrayList<>();
+        for(String tag : tagRes){
+            OResultSet rsPost = db.query(queryPost, tag);
+            postRes.add(rsPost.next().getProperty("idPost").toString());
+        }
+
+        // GETTING THE CUSTOMERS WHO CREATED THESE POSTS AND CHECKING IF IT'S IN THE CORRECT PERIOD
+        String queryCustomerPost = "select creationDate, OUT(\"HasCreated\").id from `Post` where idPost=? and creationDate between ? and ?";
+        ArrayList<String> customerPostRes = new ArrayList<>();
+        for(String post : postRes){
+            OResultSet rsCustomerPost = db.query(queryCustomerPost, post, startDate, endDate);
+            while(rsCustomerPost.hasNext()) {
+                customerPostRes.addAll(rsCustomerPost.next().getProperty("OUT(\"HasCreated\").id"));
+            }
+        }
+
+
+
+
+        // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
+        ArrayList<String> finalOrderRes = new ArrayList<>();
+
+        for(int i = 0; i<=dateRes.size()-1;i++){
+            Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(dateRes.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(endDate));
+            Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(startDate).before( new SimpleDateFormat("yyyy-MM-dd").parse(dateRes.get(i))));
+            if(bool&&bool2){
+                finalOrderRes.add(orderRes.get(i));
+            }
+
+        }
+
+        // GETTING THE CUSTOMERS WHO ORDERED THE PRODUCT IN THE PERIOD INTERVAL
+        // AND HAD COMMENTED IT OR POSTED ON IT
+
+        ArrayList<String> finalRes = new ArrayList<>();
+        for(String s : feedbackRes){
+            if(finalOrderRes.contains(s)){
+                finalRes.add(s);
+            }
+        }
+        for(String s : customerPostRes){
+            if(finalOrderRes.contains(s)){
+                finalRes.add(s);
+            }
+        }
+
+
+        // FINAL RESULTS :
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("                 CUSTOMERS WHO GAVE A FEEDBACK ON THE PRODUCT :                ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : feedbackRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("          CUSTOMERS WHO POSTED ON THE PRODUCT IN THE SPECIFIED PERIOD :        ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : customerPostRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("-------------------------------------------------------------------------------");
+        System.out.println("           CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD :         ");
+        System.out.println("-------------------------------------------------------------------------------");
+
+        for (String s : finalOrderRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+
+        System.out.println("--------------------------------------------------------------------------------------------");
+        System.out.println("   CUSTOMERS WHO ORDERED THE PRODUCT IN THE SPECIFIED PERIOD AND COMMENTED OR POSTED ON IT  ");
+        System.out.println("--------------------------------------------------------------------------------------------");
+
+        for (String s : finalRes) {
+            String q1 = "SELECT * from Customer where id = ?";
+            OResultSet r1 = db.query(q1, s);
+            System.out.println(r1.elementStream().findFirst().get());
+        }
+        System.out.println("--------------------------------------------------------------------------------------------");
+
+    }
+
+
+// RESULTATS 
+
 query2(db,"B005FUKW6M","2001-12-18", "2021-01-18");
 
 
