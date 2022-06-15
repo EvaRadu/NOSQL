@@ -209,4 +209,38 @@ public class VendorLoader {
         }
     }
 
+    public static void testCRUDMethods(ODatabaseSession db){
+        /* ------------------------ */
+        /* --- TESTS 4.4 VENDORS -- */
+        /* ------------------------ */
+        VendorLoader vendorLoader = new VendorLoader(db);
+
+        ODocument docVendor1 = new ODocument("VendorVertex");
+        docVendor1.field("Vendor", "EvaShop");
+        docVendor1.field("Country", "Romania");
+        docVendor1.field("Industry", "Clothes");
+
+        ODocument docVendor2 = new ODocument("VendorVertex");
+        docVendor2.field("Vendor", "EvaShop");
+        docVendor2.field("Country", "Romania");
+        docVendor2.field("Industry", "Sports");
+
+        ODocument docVendor3 = new ODocument("VendorVertex");
+        docVendor3.field("Vendor", "MiaShop");
+        docVendor3.field("Country", "France");
+        docVendor3.field("Industry", "Sports");
+
+        List<ODocument> docsVendor = new ArrayList<ODocument>();
+        docsVendor.add(docVendor2);
+        docsVendor.add(docVendor3);
+
+        vendorLoader.insertOneVendor(db,docVendor1);
+        vendorLoader.updateOneVendor(db,docVendor2);
+        vendorLoader.deleteOneVendor(db,docVendor3);
+
+        vendorLoader.insertManyVendors(db,docsVendor);
+        vendorLoader.updateManyVendors(db,docsVendor);
+        vendorLoader.deleteManyVendors(db,docsVendor);
+    }
+
 }

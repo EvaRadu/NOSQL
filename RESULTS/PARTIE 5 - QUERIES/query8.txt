@@ -1,0 +1,480 @@
+// EVA RADU
+
+ /*
+        Query 8 :
+         For all the products of a given category during a given year, compute its total sales
+         amount, and measure its popularity in the social media.
+  */
+    public static void query8(ODatabaseSession db, String year, String category) throws ParseException {
+        String query1 = "SELECT asin, IN(\"Orderline\").OrderDate, IN(\"Orderline\").TotalPrice from Product";
+        OResultSet rs = db.query(query1);
+
+
+        while(rs.hasNext()) {
+            OResult optional = rs.next();
+            ArrayList<String> currentDates = optional.getProperty("IN(\"Orderline\").OrderDate");
+            ArrayList<Float> currentAmounts = optional.getProperty("IN(\"Orderline\").TotalPrice");
+            String currentAsin = optional.getProperty("asin");
+            ArrayList<String> resDates = new ArrayList<>();
+            ArrayList<Float> resAmounts = new ArrayList<>();
+            float totalSales = 0;
+
+            if(!currentDates.isEmpty()){
+
+                // STEP 1 : FILTERING THE DATES
+                for(int i = 0; i<currentDates.size(); i++){
+                    Boolean bool = (new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))).before( new SimpleDateFormat("yyyy-MM-dd").parse(year+"-12-31"));
+                    Boolean bool2 = (new SimpleDateFormat("yyyy-MM-dd").parse(year+"-01-01").before( new SimpleDateFormat("yyyy-MM-dd").parse(currentDates.get(i))));
+                    if(bool&&bool2) {
+                        resDates.add(currentDates.get(i));
+                        resAmounts.add(currentAmounts.get(i));
+                    }
+                }
+
+                // STEP 2 : FILTERING THE CATEGORIES
+                String query2 = "SELECT asin, OUT(\"ProductTag\").name, OUT(\"ProductTag\").idTag FROM Product where asin = ?";
+                OResultSet rs2 = db.query(query2,currentAsin);
+                OResult optional2 = rs2.next();
+                ArrayList<String> currentCategories = optional2.getProperty("OUT(\"ProductTag\").name");
+                ArrayList<String> currentPost = optional2.getProperty("OUT(\"ProductTag\").idTag");
+
+                if(currentCategories.contains(category)){
+                    for(Float money : resAmounts){
+                        totalSales = totalSales + money;
+                    }
+
+                    System.out.println("FOR THE PRODUCT n° " + currentAsin);
+                    System.out.println("------ DURING THE YEAR                :  " + year);
+                    System.out.println("------ BEING IN THE CATEGORY          :  " + category);
+                    System.out.println("------ TOTAL SALES AMOUNT             :  " + totalSales);
+                    System.out.println("------ POPULARITY IN THE SOCIAL MEDIA :  " + currentPost.size() + " posts");
+
+                }
+
+
+
+            }
+        }
+    }
+
+
+// RESULTATS
+
+query8(db,"2018", " Levis");
+
+
+FOR THE PRODUCT n° B0007VBRUE
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  10137.86
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000ES178C
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B006N83RL2
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  914.14
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00271ERVI
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  573474.6
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000NWTX6W
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  19794.242
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B002AXYZYM
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004WUNKB0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  3788.88
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004NCJAHK
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  10726.59
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B005ZENOMM
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001CF4ZHG
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0034L70M8
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  27103.012
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000NMALJU
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0018L9P2O
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  26375.36
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0012N381M
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  1859.07
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004WZ62F6
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  15977.59
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B007TDGXIO
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  210836.69
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0036VHZD0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  2825.31
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004GHPMHY
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  2919.94
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B005JK5HQI
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  8700.779
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B002MA7Y1Y
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  312506.8
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004UMAEQE
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  3757.4302
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0029M14R0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  52648.62
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B007TNXAGM
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  3952.59
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0018LH2QA
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  191330.61
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00GGR0XD0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0002CTZ70
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  13510.189
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000BSY9IA
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  4227.9297
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001EJPGN2
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  4982.3403
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001R6B06E
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  27683.783
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0055E9U2K
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  8652.989
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00068TJ76
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  52434.742
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0010YOBB4
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B007L5KCB4
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  1588040.6
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00C65NA8Q
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000GEY6L4
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0019N3TZK
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0051BY8ZG
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B005AUF1CW
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  20573.15
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B003ZZ9C6K
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  18194.14
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001539962
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  195804.47
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0020GZ1QA
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  5729.6396
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00068TJIU
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  269825.12
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0083D1Y7Y
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  670.89
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00CL6GRPI
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  267524.66
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00A8LOV5G
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  1403.88
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000INQTDG
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  40931.934
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00556M7BY
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  289.95
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0031VXG4C
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  265022.88
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0054FAISK
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  2886.6802
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00453R308
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  14275.489
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000BSZDQC
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000LSKDY4
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001NGD49O
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0028MCOAM
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  358.99
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000P433Y6
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004TDPSGU
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  29537.023
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00BCX842K
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00004YVB1
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  167801.45
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0036VDPTI
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  8167.71
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004IIZVQ8
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  1582173.8
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001L7UTS4
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  196057.75
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B002GNYD70
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  2717.47
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B002QWB8HY
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  527353.25
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B003826FMY
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  87381.79
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004VK17C0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  1268.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0051HHNJ8
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  21253.61
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B005FN0XY0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B002AQRJZQ
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001876XYG
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B005D7FXMA
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  169954.38
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00BD50S3K
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00IL2QTDQ
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  5751.62
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001NIE3ZG
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  702434.5
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004ILKEUI
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  1125.99
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B009PA1KJG
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  24427.91
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0019MNJLK
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  27115.91
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B001ASZM22
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  34358.14
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B0018LBJPK
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  34112.5
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B005OVCF8U
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  5161.0703
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004V9F5SS
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B000QJC4AY
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  448425.06
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B004WMFTDU
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  0.0
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
+FOR THE PRODUCT n° B00AQXL8R0
+------ DURING THE YEAR                :  2018
+------ BEING IN THE CATEGORY          :   Levis
+------ TOTAL SALES AMOUNT             :  108190.03
+------ POPULARITY IN THE SOCIAL MEDIA :  3 posts
