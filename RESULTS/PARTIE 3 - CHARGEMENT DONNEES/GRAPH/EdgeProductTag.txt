@@ -1,5 +1,7 @@
-Pour créer une relation entre Product et Tag on a fait une relation par hasard
-puisqu'on n'a pas de données qui relient les deux ensemble
+// Mokhtar Samy
+
+Pour créer une relation entre Product et Tag on a fait des relations au hasard
+puisqu'on n'a pas de données qui relient les deux ensembles
 
 public void createEdgeProductTag(){
         String query = "SELECT * from Product";
@@ -19,3 +21,37 @@ public void createEdgeProductTag(){
             newProduct.save();
         }
     }
+
+
+
+/* RESULTATS
+
+SELECT * FROM ProductTag
+
++----+-------+----------+-------+-------+
+|#   |@RID   |@CLASS    |in     |out    |
++----+-------+----------+-------+-------+
+|0   |#162:0 |ProductTag|#98:0  |#34:0  |
+|1   |#162:1 |ProductTag|#98:8  |#34:8  |
+|2   |#162:2 |ProductTag|#98:16 |#34:16 |
+|3   |#162:3 |ProductTag|#98:24 |#34:24 |
+|4   |#162:4 |ProductTag|#98:32 |#34:32 |
+|5   |#162:5 |ProductTag|#98:40 |#34:40 |
+|6   |#162:6 |ProductTag|#98:48 |#34:48 |
+|7   |#162:7 |ProductTag|#98:56 |#34:56 |
+|8   |#162:8 |ProductTag|#98:64 |#34:64 |
+|9   |#162:9 |ProductTag|#98:72 |#34:72 |
+|10  |#162:10|ProductTag|#98:80 |#34:80 |
+|11  |#162:11|ProductTag|#98:88 |#34:88 |
+|12  |#162:12|ProductTag|#98:96 |#34:96 |
+|13  |#162:13|ProductTag|#98:104|#34:104|
+|14  |#162:14|ProductTag|#98:112|#34:112|
+|15  |#162:15|ProductTag|#98:120|#34:120|
+|16  |#162:16|ProductTag|#98:128|#34:128|
+|17  |#162:17|ProductTag|#98:136|#34:136|
+|18  |#162:18|ProductTag|#98:144|#34:144|
+|19  |#162:19|ProductTag|#98:152|#34:152|
++----+-------+----------+-------+-------+
+LIMIT EXCEEDED: resultset contains more items not displayed (limit=20)
+
+*/

@@ -1,4 +1,6 @@
-Post (Vertex) noeud
+// Mokhtar Samy
+
+// Post (Vertex) noeud
 
 1)  On vérifie premièrement si la classe existe, sinon on le crée et on crée son Index sur l'ID
 
@@ -78,3 +80,37 @@ Post (Vertex) noeud
         post.setProperty("length", Integer.parseInt(length));
         post.save();
     }
+
+
+/* RESULTATS
+
+ SELECT * FROM Post LIMIT 20
+
++----+------+------+------+--------+---------+---------+---------+---------+---------+---------+---------------+----------------------------------------------------+
+|#   |@RID  |@CLASS|length|language|idPost   |out_HasCr|locationI|browserUs|creationD|imageFile|out_HasTag     |content                                             |
++----+------+------+------+--------+---------+---------+---------+---------+---------+---------+---------------+----------------------------------------------------+
+|0   |#90:0 |Post  |140   |uz      |123695...|[#130:0] |41.138...|Intern...|2011-0...|         |[#114:0,#115...|About Armasight Spark CORE Multi-Purpose Night Vi...|
+|1   |#90:1 |Post  |115   |uz      |137438...|[#130:8] |27.34....|Intern...|2011-1...|         |[#116:37,#11...|About Armasight Spark CORE Multi-Purpose Night Vi...|
+|2   |#90:2 |Post  |0     |        |549755...|[#130:16]|41.138...|Intern...|2010-1...|photo5...|               |                                                    |
+|3   |#90:3 |Post  |0     |        |412316...|[#130:24]|41.138...|Intern...|2010-0...|photo4...|               |                                                    |
+|4   |#90:4 |Post  |0     |        |151182...|[#130:32]|41.138...|Intern...|2011-1...|photo1...|               |                                                    |
+|5   |#90:5 |Post  |0     |        |192414...|[#130:40]|41.138...|Intern...|2012-0...|photo1...|               |                                                    |
+|6   |#90:6 |Post  |0     |        |412316...|[#130:48]|41.138...|Intern...|2010-0...|photo4...|               |                                                    |
+|7   |#90:7 |Post  |233   |tk      |123695...|[#130:56]|197.20...|Intern...|2011-0...|         |[#114:71,#11...|About NcStar Ruger 10/22 Weaver and 3/8&quot; Dov...|
+|8   |#90:8 |Post  |120   |tk      |962072...|[#130:64]|80.208...|Firefox  |2011-0...|         |[#121:108,#1...|About Schwinn 450 Elliptical Trainer,  nsure the ...|
+|9   |#90:9 |Post  |88    |tk      |164926...|[#130:72]|201.22...|Firefox  |2012-0...|         |[#118:148,#1...|About TKO Adjustable Weighted Vest,  ) is a profe...|
+|10  |#90:10|Post  |94    |tk      |962072...|[#130:80]|101.13...|Firefox  |2011-0...|         |[#116:187,#1...|About NcStar Ruger 10/22 Weaver and 3/8&quot; Dov...|
+|11  |#90:11|Post  |98    |uz      |137438...|[#130:88]|14.102...|Firefox  |2011-1...|         |[#119:226,#1...|About Shimano XT/XTR M775 Disc Brake Pads,  ouble...|
+|12  |#90:12|Post  |0     |        |412316...|[#130:96]|1.1.7.155|Chrome   |2010-0...|photo4...|               |                                                    |
+|13  |#90:13|Post  |0     |        |206158...|[#130:...|1.1.7.155|Chrome   |2012-1...|photo2...|               |                                                    |
+|14  |#90:14|Post  |0     |        |178670...|[#130:...|1.1.7.155|Chrome   |2012-0...|photo1...|               |                                                    |
+|15  |#90:15|Post  |0     |        |151182...|[#130:...|1.1.7.155|Chrome   |2012-0...|photo1...|               |                                                    |
+|16  |#90:16|Post  |0     |        |178670...|[#130:...|1.1.7.155|Chrome   |2012-0...|photo1...|               |                                                    |
+|17  |#90:17|Post  |90    |uz      |549755...|[#130:...|49.207...|Firefox  |2010-1...|         |[#117:246,#1...|About Nikon COOLSHOT Laser Rangefinder,  an Test ...|
+|18  |#90:18|Post  |117   |uz      |549755...|[#130:...|46.36....|Firefox  |2010-1...|         |[#120:271,#1...|About Nikon COOLSHOT Laser Rangefinder,  nt issue...|
+|19  |#90:19|Post  |0     |        |549755...|[#130:...|90.157...|Firefox  |2010-1...|photo5...|               |                                                    |
++----+------+------+------+--------+---------+---------+---------+---------+---------+---------+---------------+----------------------------------------------------+
+
+20 item(s) found. Query executed in 0.01 sec(s).
+
+*/
