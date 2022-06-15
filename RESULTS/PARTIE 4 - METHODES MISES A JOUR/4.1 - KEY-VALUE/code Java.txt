@@ -1,4 +1,4 @@
-// KHAOULA BHOUHLAL
+// KHAOULA BOUHLAL
 
   public void supprimerFeedbackParCustomer(String firstName){
         String supprimer = "DELETE EDGE Feedback WHERE out.firstName = ?";
