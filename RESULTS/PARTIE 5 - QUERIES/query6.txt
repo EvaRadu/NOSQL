@@ -4,7 +4,7 @@
 
 /*
 
-Premièrement on cherche le plus court chemin entre deux personnes données.
+Premièrement on cherche le plus court chemin entre deux personnes données dans les arcs de la classe Knows.
 
 Après on prend le résultat et leur achats effectués dans Order, on compte la fréquence des produits
 dans leurs liste d'achats, et on prend les 3 produits avec le plus de fréquence.
