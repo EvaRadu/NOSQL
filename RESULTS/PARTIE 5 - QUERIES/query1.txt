@@ -1,0 +1,364 @@
+//QUERY 1
+        /*
+        For a given customer, find his/her all related data including profile, orders, invoices,
+        feedback, comments, and posts in the last month, return the category in which he/she has
+        bought the largest number of products, and return the tag which he/she has engaged the
+        greatest times in the posts.
+        */
+        
+        /* EXPLICATIONS : 
+	 - Pour récupérer le profil, les invoice, les orders, les feedbacks on recourt à de simples requêtes OrientDb où la recherche est paramétrée par l'id donné en paramètre.
+	 
+	 - Pour trouver les posts créés par la personne au cours du dernier mois (par rapport à la date donnée en paramètre étant donné que certaines données datent d'il y a plusieurs années), je récupère la date donnée en paramètre. Grâce au module Calandar de java je crée une variable de type Date contenant la date donnée en paramètre - 1 mois. Et je compare les dates des posts retrouvés grâce à la requête :  "Select * from HasCreated where idPerson = ?"
+	     
+        - Pour déterminer la catégorie dans laquelle un client a le plus acheté de produit, il a fallu ajouter une relation HASTAG entre les entités PRODUCT et TAG.
+        Dans un premier temps, je récupère l'ensemble des asins des produits achetés par un client grâce à la requête suivante : "SELECT asin from Product WHERE in(\"Orderline\").PersonId= ?". Je conserve les asins trouvés dans une ArrayList.
+        Ensuite, j'effectue une seconde requête qui compte le nombre de produits  (dans la liste créée ci-dessus) dans l'ordre décroissant par id de Tag : "SELECT in.idTag as idTag, COUNT(in.idTag) as cptT from ProductTag where out.asin in ? group by in.idTag order by cptT DESC". Comme c'est trié dans l'ordre décroissant, je récupère l'idTag du premier élément.
+        Enfin, je récupère le nom correspondant à l'idTag : "SELECT name from TAG where idTag = ?"
+      Et c'est ainsi qu'on obtient la catégorie pour laquelle la personne a le plus acheté de produit.
+      
+      - Pour trouver le tag par rapport auquel l'utilisateur a le pus posté, j'effectue la requête suivante : "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = ?) GROUP BY idTag ORDER BY nbTags DESC". Dans un premier temps, on récupère les ids de tous les posts créés par la personne. Ensuite, on demande les noms des tags et le nombre de posts par tag des posts qu'on va afficher par ordre décroissant. Il suffit donc de récupérer le  premier élément pour déterminer le tag par rapport auquel la personne a le plus posté.
+        */
+        
+        
+    public static void query1(ODatabaseSession db, String id, Date date) throws ParseException {
+
+	//INTERVAL DE TEMPS
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.add(Calendar.MONTH, -1);
+        Date lastMonth = cal.getTime();
+
+	//RECUPERER LE PROFIL
+        String queryCust = "SELECT * from Customer where id = ?";
+        OResultSet rsCust = db.query(queryCust, id);
+        Optional custRes = rsCust.elementStream().findFirst();
+        if (custRes.isPresent()) {
+            OVertex customerVertex = (OVertex) custRes.get();
+            System.out.println("========= PROFILE =========");
+            System.out.println((String) customerVertex.getProperty("id"));
+            System.out.println((String) customerVertex.getProperty("firstName"));
+            System.out.println((String) customerVertex.getProperty("lastName"));
+            System.out.println((String) customerVertex.getProperty("gender"));
+            System.out.println((String) customerVertex.getProperty("birthday"));
+            System.out.println((String) customerVertex.getProperty("creationDate"));
+            System.out.println((String) customerVertex.getProperty("locationIP"));
+            System.out.println((String) customerVertex.getProperty("browserUsed"));
+            System.out.println((String) customerVertex.getProperty("place"));
+            System.out.println("\n========= HasCreatedPosts =========");
+
+		//RECUPERER LES POSTES CREES PAR LA PERSONNE
+            for (OEdge e : customerVertex.getEdges(ODirection.OUT, "hasCreated")) {
+                if (e.getProperty("idPerson").equals(id)) {
+                    OVertex post = e.getVertex(ODirection.OUT);
+                    System.out.println((String) post.getProperty("idPost"));
+                    System.out.println((String) post.getProperty("imageFile"));
+                    System.out.println((String) post.getProperty("creationDate"));
+                    System.out.println((String) post.getProperty("locationIP"));
+                    System.out.println((String) post.getProperty("browserUsed"));
+                    System.out.println((String) post.getProperty("language"));
+                    System.out.println((String) post.getProperty("content"));
+                    System.out.println((String) post.getProperty("length"));
+
+                }
+            }
+
+        }
+
+	//RECUPERER LES ORDERS DE LA PERSONNE
+        String queryOrder = "SELECT * from Order where PersonId = ?";
+        OResultSet rsOrder = db.query(queryOrder, id);
+        System.out.println("\n========= ORDERS =========");
+        while (rsOrder.hasNext()) {
+            Optional<OVertex> optional = rsOrder.next().getVertex();
+            if (optional.isPresent()) {
+                OVertex order = optional.get();
+                System.out.println((String) order.getProperty("OrderId"));
+                System.out.println((String) order.getProperty("PersonId"));
+                System.out.println((String) order.getProperty("OrderDate"));
+                System.out.println((Float) order.getProperty("TotalPrice"));
+            }
+        }
+        rsOrder.close();
+        
+	//RECUPERER LES INVOICES DE LA PERSONNE
+        String queryInvoice = "SELECT * from Invoice where personId = ?";
+        OResultSet rsInvoice = db.query(queryInvoice, id);
+        System.out.println("\n========= INVOICES =========");
+        while (rsInvoice.hasNext()) {
+            Optional<OVertex> optional = rsInvoice.next().getVertex();
+            if (optional.isPresent()) {
+                OVertex invoice = optional.get();
+                System.out.println((String) invoice.getProperty("orderId"));
+                System.out.println((String) invoice.getProperty("personId"));
+                System.out.println((Date) invoice.getProperty("orderDate"));
+                System.out.println((Float) invoice.getProperty("price"));
+            }
+        }
+        rsInvoice.close();
+
+	//RECUPERER LES FEEDBACKS DE LA PERSONNE
+        String queryFeedback = "SELECT * from Feedback where personID = ?";
+        OResultSet rsFeedback = db.query(queryFeedback, id);
+        System.out.println("\n========= FEEDBACKS =========");
+        while (rsFeedback.hasNext()) {
+            Optional<OEdge> optional = rsFeedback.next().getEdge();
+            if (optional.isPresent()) {
+                OEdge feedback = optional.get();
+                System.out.println((String) feedback.getProperty("comment"));
+            }
+        }
+        rsFeedback.close();
+
+        /*
+        //Select * from Post where idPost in (Select idPost from HasCreated where idPerson=?)
+        String queryHasCreated = "Select * from HasCreated where idPerson = ?";
+        OResultSet rsHasCreated = db.query(queryHasCreated, id);
+        while (rsHasCreated.hasNext()) {
+            Optional<OEdge> optional = rsHasCreated.next().getEdge();
+            if (optional.isPresent()) {
+                OVertex post = optional.get().getVertex(ODirection.OUT);
+                Date datePost = (Date) post.getProperty("creationDate");
+                if (datePost.after(lastMonth) && datePost.before(date)) {
+
+                    System.out.println((String) post.getProperty("imageFile"));
+                    System.out.println((Date)   post.getProperty("creationDate"));
+                    System.out.println((String) post.getProperty("locationIP"));
+                    System.out.println((String) post.getProperty("browserUsed"));
+                    System.out.println((String) post.getProperty("language"));
+                    System.out.println((String) post.getProperty("content"));
+                    System.out.println((Integer) post.getProperty("length"));
+                    System.out.println(datePost);
+                }
+            }
+            rsHasCreated.close();
+        */
+
+        //RECUPERER LES PRODUITS ACHETES PAR UN UTILISATEUR
+        String queryMostProdTag = "SELECT asin from Product WHERE in(\"Orderline\").PersonId= ?";
+        OResultSet rsMPT = db.query(queryMostProdTag,id);
+        ArrayList<String> asins = new ArrayList<>();
+        while(rsMPT.hasNext()) {
+            OResult optional = rsMPT.next();
+            asins.addAll(optional.getProperty("asin"));
+        }
+        rsMPT.close();
+
+	//NOMBRE DECROISSANT DE PRODUITS PAR TAG
+        String queryMostProdTag2 = "SELECT in.idTag as idTag, COUNT(in.idTag) as cptT from ProductTag where out.asin in ? group by in.idTag order by cptT DESC";
+        OResultSet rsMPT2 = db.query(queryMostProdTag,asins);
+        OResult optional = rsMPT2.next();
+        String idTag = optional.getProperty("idTag");
+        rsMPT2.close();
+        //NOM DU TAG AVEC LE PLUS DE PRODUITS ACHETES PAR LA PERSONNE
+        String subQuery = "SELECT name from TAG where idTag = ?";
+        OResult optional2 = rsMPT2.next();
+        String name = optional2.getProperty("name");
+        System.out.println("The tag of the most sold product is " + name);
+
+	//RECUPERER LE NOM DU TAG AVEC LE PLUS DE POSTS
+        String queryTag = "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = ?) GROUP BY idTag ORDER BY nbTags DESC";
+        OResultSet rsTag = db.query(queryTag, id);
+        System.out.println("\n========= The tag which the person has engaged the greatest times in the posts =========");
+        System.out.println(rsTag.stream().findFirst().get());
+    }
+    
+    
+ /* RESULTAT pour : query1(db, "4145", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2011-09-15 00:00:00") );
+ 
+ ========= PROFILE =========
+4145
+Albade
+Maazou
+female
+1981-03-21
+2010-03-13T02:10:23.099+0000
+41.138.53.138
+Internet Explorer
+1263
+
+========= HasCreatedPosts =========
+
+========= ORDERS =========
+b9b841af-4b3e-48b0-ae76-2da6d06d6c83
+4145
+2021-09-27
+1254.43
+ce89c0f1-eed0-45d4-9860-628543cb9f34
+4145
+2024-08-04
+1631.73
+70c0e106-9093-48bd-819a-3a145cf11d25
+4145
+2023-04-20
+1534.98
+30cd2e4d-f231-464d-bfd3-956e08a3bdd8
+4145
+2023-08-06
+1134.57
+8cebf123-b47e-4b33-b444-557fbd63ef81
+4145
+2024-06-27
+1311.67
+d64cd5de-e7f1-43fc-a78a-f410427dde32
+4145
+2024-07-18
+1942.46
+5d9ffb4d-1646-43de-acff-fe42dfb8c40b
+4145
+2021-09-24
+1371.89
+5aa50918-79ee-4370-96b6-d3aac757a591
+4145
+2018-06-24
+1799.0
+e6291fa1-23c6-42bb-a64b-d0aedab51c87
+4145
+2021-05-16
+60.99
+8b2689ab-8a4c-4cda-b41d-94347ab7079c
+4145
+2021-02-19
+1036.43
+7846238e-be04-424a-b638-a77a5af9d766
+4145
+2020-09-29
+1602.29
+4648db67-e236-408c-83d7-856507a07021
+4145
+2021-04-24
+3177.17
+6a6884c9-1f14-42e2-9097-7641e1fb821c
+4145
+2022-11-18
+2048.91
+0fec912a-8fb9-407a-b3d0-829251fddac3
+4145
+2024-09-03
+1624.57
+11fd651d-384b-40d9-bcd3-ec8698540e1f
+4145
+2019-03-06
+1790.69
+f0da818a-8b6c-49c8-a504-8eab9d526787
+4145
+2024-06-19
+1219.14
+414caa72-0e4f-4774-8665-83058a037092
+4145
+2020-09-26
+1463.86
+
+========= INVOICES =========
+148eabfe-e0d8-4266-af46-d3bcfea22fb4
+4145
+Mon Sep 27 00:00:00 CEST 2021
+1254.43
+612b1a71-c765-45a3-87fb-217fc2b8b865
+4145
+Sun Aug 04 00:00:00 CEST 2024
+1631.73
+65af7922-48be-4de5-a200-a2648d293432
+4145
+Thu Apr 20 00:00:00 CEST 2023
+1534.98
+5395897c-a8d7-41b6-b355-5cd8f559e5a1
+4145
+Sun Aug 06 00:00:00 CEST 2023
+1134.57
+e78b4ea9-3dfa-4b20-a406-efdee6c2d35c
+4145
+Thu Jun 27 00:00:00 CEST 2024
+1311.67
+a16757e9-fc9f-4bef-9c7d-5973e02d66bd
+4145
+Thu Jul 18 00:00:00 CEST 2024
+1942.46
+062f6a7e-d2b1-4246-81df-8482cac7bd69
+4145
+Fri Sep 24 00:00:00 CEST 2021
+1371.89
+e601ace5-2e9b-466a-82af-4639a075b14c
+4145
+Sun Jun 24 00:00:00 CEST 2018
+1799.0
+2df85970-a1c8-4a0d-9f40-f951b7a268b2
+4145
+Sun May 16 00:00:00 CEST 2021
+60.99
+13366a5d-c974-4cd2-a8ef-f9a833fae4e3
+4145
+Fri Feb 19 00:00:00 CET 2021
+1036.43
+817465b7-1a12-4607-ba5b-1cf0ed92d181
+4145
+Tue Sep 29 00:00:00 CEST 2020
+1602.29
+a7636ddc-28c2-42ac-b6a3-5e03f7c26f2b
+4145
+Sat Apr 24 00:00:00 CEST 2021
+3177.17
+2045a498-f99e-483e-9c6b-1821f68f2dba
+4145
+Fri Nov 18 00:00:00 CET 2022
+2048.91
+d0a753e6-3ba4-4b82-9049-494025b8520d
+4145
+Tue Sep 03 00:00:00 CEST 2024
+1624.57
+842f7965-3a06-4362-bb17-22b6e8864c24
+4145
+Wed Mar 06 00:00:00 CET 2019
+1790.69
+b04307c0-2817-403d-a8c4-9f9c6608369d
+4145
+Wed Jun 19 00:00:00 CEST 2024
+1219.14
+078a23b5-2409-4860-8fc4-e530579b9ec2
+4145
+Sat Sep 26 00:00:00 CEST 2020
+1463.86
+
+========= FEEDBACKS =========
+'5.0,I have a good digital scale but when I was reloading about every third or fourth powder measure I would have to check and  recalibrate, I just trust this old style type scale. ( I like a digital but they are a little sensitive )'
+'4.0,I placed my moss berg 500 shotgun on this rest and found that I had to rest the fore grip on the front mount it doesn\t extend to the  length that will allow me to place just the barrel on the front rest.  however for my money I am pleased with this vise/rest. it takes almost all the recoil of your weapon and with a few adjustments it is a very steady shooting rest'
+'5.0,I ordered two sets of the Carbon Strykes (one for my wife\s bike and one for mine) and I absolutely love them.  We\ve raced two triathlons so far with them (as well as a 100+ training miles) and couldn\t be happier.I wrapped both sets of bars with Lizard Skin to match our bikes so they not only look great, but they feel great too :-)A couple of things to note:1)  I HIGHLY recommend purchasing theProfile Design Forged Flipup Bracket Kit (31.8).  It goes on VERY easily and gets the pads out of your way when you\re climbing or just don\t feel like riding in aero.2)  Be careful when pulling the velcro straps tight on the pads.  I broke one on my wife\s bike (I guess I don\t know my own strength).3)  Make sure to loosen the bottom bracket completely when adjusting how far the bars come out from the bars... The aero bars scratch pretty easily.'
+'1.0,I bought one despite the negative reviews.  It worked for a few months then failed.  I contacted RCBS and they sent a new one....that\s the good news.  The bad news is the new one lasted another couple of months and failed.  I bought the Hornady Electronic Scale instead.Hornady Electronic ScaleDo yourself a favor and start there!'
+'5.0,Amazing quality at such a low price! Loving it! Clear glass, holds a tight zero, and Duhh it\s a Leupold. Only higher end scope with tactical turrets at this price point. Love the turrets makes for easy adjustments.'
+'5.0,The five stars is after short usage. It took me longer to unpack than to put it together, it comes with easy to follow instructions, one thing that impressed me was a really nice hex wrench with a plastic handle (compare to other put together items that use hex wrenches that are hard on the hands). It is quiet running and smooth. The deck is easy to lift and drop for moving or cleaning under. I replaced another treadmill (after years of use) that cost more than this one. So far I am impressed.'
+'5.0,Debated this purchase for some time.  Im a real fan of Spyderco, primarily their folders.  I was always put off by the appearance of the Spyderco hole opening  system and what appeared to be their quirky blade shape that accommodated that same hole.  It turns out that is all functional.  Spyderco ergonomics work!The Temperence is different. The Spider Hole is reduced to just a trademark. The jimping is not as sharp or as functional as on the folders.  Id prefer sharper, but its still functional.  Im so impressed with Spyderco that I suspect there may be practical reason for the difference.  The blade is beautiful.  The knife is beautiful.  Too beautiful to use?  May be!Some knife nuts will ask for a &#34;super steel&#34; blade.  I suppose the price of this makes you expect that but I also appreciate the trade offs involved in the choice of steel.  The VG-10 steel used here has the reputation of being very rust resistant and easy to sharpen.  I cannot imagine beating on this knife.  I buy 1095 or other high carbon (non-stainless) knives for that.Be aware, and this is a positive, this knife arrived sharp!'
+'5.0,I put these on my Mossberg 500A. The rear sight was simple and I installed that one myself. The front sight I had to have sent out to a gunsmith. Let me tell you here in NY that was no easy feat. I called 15-20 gun shops and nobody would touch it. I found one that did and he still has the gun going on 2 months now. Its his busy season and I was warned it will take a while so no big deal. I have these exact sights on other gun and man they are awesome. Seller was great, fast shipping, item was exactly as described.'
+'5.0,I was flat out impressed with this NV moncular.  I have spent many hours on gaurd duty at night in a gun tower wearing my issue NODS and this little unit is not far off from them and this is an afffordable gen1 NV system.  I feel that this unit out performs its pricee point and its Gen1 status.  To say Gen1+ is safe and a bit of an understatment.  Serious bang for your buck period.'
+'5.0,I chose this rating (5 stars) because these grips are Killer Grips! They are comfortable, well made and look great. I put them on my 1911 Para Ordanance pistol. I did have to shave them about 1or 2 mm so they would fit more flush to the gun. This shaving worked out well, nice an flush, tight and comfortable. I intend on ordering more, I have 8 1911s altogether. The shipping and packing was also great. Please keep up the good work. I recommend ur products to anyone who is looking to purchase custom hand grips. Thanks'
+'4.0,Good trainer.  Easy to set up (for a handy person) good programs and the elliptical workout is easy on your knees.'
+'3.0,The SteriPEN Emergency Handheld UV water purifier is nearly identical to all other offerings in the model line. It gets good marks for compact design and the use of easily replaceable AA Lithium batteries - according to the manufacturer, alkaline AAs aren\t powerful enough. But be warned: this device offers only half the solution to safe drinking water - and you wouldn\t know that by reading the tiny, sparse information sheet included with the unit\s small box.So, three stars because the device worked, compact design and use of AA batteries.However, minus one star because of the lack of good technical info included with the unit. And minus another star because no option or device is included to provide filtering for Giardia, immune to UV treatment.In other words, this device provides INCOMPLETE protection. You should also note (and this is not detailed in any of the information included with this device), that the neutered microbes, even following treatment, can again become active if the SteriPEN-treated water is subject to visible light for a period of time!'
+'4.0,Bike is very smooth and comfortable.  It was delivered sooner than expected.  Not to hard or took to long to assemble.  There is a problem with a broken mast cable that Schwinn is sending a new cable free under the 90 day warrenty.  Like the bike.'
+'4.0,The mount is the elastic band system common to these types of lights. It can easily mount to a vented helmet and the cord is long enough to put the battery in a pocket or backpack. The battery is bulky and heavy so it is not going on the helmet. If handlebar mounted, the battery has a velcro strap to attach it to the frame or stem. I like that it has a digital readout of voltage. I do not know the limit of the battery life since I keep it charged up and have never discharged it completely. The back of the emitter array has a button to select the light intensity. You can adjust brightness from power save to offroad superbright. This button changes color to indicate the battery status. The light can get hot if left on superbright too long and it will automatically dim to a lower, cooler setting. This could be an issue if you are riding offroad and the light dims at a crucial moment. At least it doesn\t shut off completely like other LED lights.'
+'3.0,Opened box and saw inadiquate packing for rifle. Picked rifle up and put it to my shoulder. And noticed barrel and stock very loose.It was so loose it would of been impossible to shoot. Mounting screw had not been tightened. I got a phillips head screwdriver and tightened screw. If this was overlooked at factory, what other things did they miss. Have not shot rifle yet. Will see if there are any other problems. For the price I paid I expected better quality. Have paid less money for real guns, not air rifles.'
+'5.0,I purchased this size case for my Armalite AR50A1B .50 cal scoped rifle.  This was the only case that I found that would fit my rifle in it without removing the scope.  It does NOT come with the pluck foam BUT, after laying my gun out and the parts to where they will be placed... I simply used an OLFA stainless steel blade that extends to about 4 inches and started cutting around my pieces.  I didn\t even have to trace anything out, just started cutting away.  The foam is pretty dense so it retains its shape even in the small edges.  As for the case itself, it feels exactly like a pelican.  The latches feel very good in quality and should not have an issue through time.  After my case is fully loaded, it probably weighs roughly 65 pounds.  With the weight in mind,  I am still able to easily pick it up from the one main carry handle and turn it to rolling position to utilize the wheels.  As for the wheels, they feel very sturdy even with all of the weight that I have inside.  Theyre pretty small so I would not recommend using it on any extremely rough surface but for that you would need some pretty big tires anyways.  Overall I would buy this case if anything were to happen to it.  A+ Plano.'
+'5.0,I did this assembly with the help of my 10 year old daughter and it took hours.  However, once assembled and put into place I have to say it\s a nice system and worth the money.'
+The tag of the most sold product is null
+
+========= The tag which the person has engaged the greatest times in the posts =========
+{
+in.name:  Lilli Ann
+nbTags: 65
+}
+
+done!
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ */
+
+

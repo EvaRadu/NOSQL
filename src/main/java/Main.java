@@ -148,17 +148,18 @@ public class Main {
         rsMPT.close();
 
         String queryMostProdTag2 = "SELECT in.idTag as idTag, COUNT(in.idTag) as cptT from ProductTag where out.asin in ? group by in.idTag order by cptT DESC";
-        OResultSet rsMPT2 = db.query(queryMostProdTag,asins);
+        OResultSet rsMPT2 = db.query(queryMostProdTag2,asins);
         OResult optional = rsMPT2.next();
         String idTag = optional.getProperty("idTag");
         rsMPT2.close();
         String subQuery = "SELECT name from TAG where idTag = ?";
-        OResult optional2 = rsMPT2.next();
+        OResultSet rs = db.query(subQuery,idTag);
+        OResult optional2 = rs.next();
         String name = optional2.getProperty("name");
         System.out.println("The tag of the most sold product is " + name);
+        rs.close();
 
-
-        String queryTag = "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = 4145) GROUP BY idTag ORDER BY nbTags DESC";
+        String queryTag = "Select in.name, Count(idTag) as nbTags from HasTag where idPost in (Select idPost from HasCreated where idPerson = ?) GROUP BY idTag ORDER BY nbTags DESC";
         OResultSet rsTag = db.query(queryTag, id);
         System.out.println("\n========= The tag which the person has engaged the greatest times in the posts =========");
         System.out.println(rsTag.stream().findFirst().get());
