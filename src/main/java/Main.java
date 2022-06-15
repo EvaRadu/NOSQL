@@ -785,7 +785,6 @@ given category. Finally, return feedback with the 5-rating review of those bough
         result.close();
     }
 
-
         public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException, ParserConfigurationException, SAXException {
         OrientDB orientDB = new OrientDB("remote:localhost/", OrientDBConfig.defaultConfig());
 
@@ -844,10 +843,10 @@ given category. Finally, return feedback with the 5-rating review of those bough
         // LOADING THE VENDOR DATA
         VendorLoader vendorLoader = new VendorLoader(db);
         vendorLoader.load();
-
+     */
         GraphLoader graphLoader = new GraphLoader(db);
-        graphLoader.createEdgeProductTag();
-        */
+       // graphLoader.createEdgeProductTag();
+
 
 
         // Créer un post
@@ -871,17 +870,15 @@ given category. Finally, return feedback with the 5-rating review of those bough
         graphLoader.updatePost(post);
 
         post.delete().save();
-*/
-
+        */
 
         /** Query 4 **/
 
-
         //Main.query4(db);
-
             /** Query 6 **/
 
-          /*  OVertex customer1 = null;
+            /*
+            OVertex customer1 = null;
             OVertex customer2 = null;
                 String query = "SELECT * FROM Customer LIMIT 20";
                 OResultSet rs = db.query(query);
@@ -891,8 +888,63 @@ given category. Finally, return feedback with the 5-rating review of those bough
                 rs.close();
 
             Main.query6(db, customer1, customer2);
-           */
-            Main.query10(db);
+        */
+           // Main.query10(db);
+
+
+            /* TEST update edge HasTag
+            OVertex post = null;
+            OVertex tag = null;
+            OEdge hasTagEdge = null;
+
+
+            ODocument newpost = new ODocument("Post");
+            newpost.field("idPost", "1339511621255");
+            newpost.field("imageFile", "anotherImage.png");
+            newpost.field("creationDate",
+                    new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse("2022-12-23 09:13:13.099+0000"));
+            newpost.field("locationIP", "43.290.55.178");
+            newpost.field("browerUsed", "Opera");
+            newpost.field("language", "SP");
+            newpost.field("content", "A new post 2");
+            newpost.field("length", "890");
+
+            graphLoader.createPost(newpost.getProperty("idPost").toString(), newpost.getProperty("imageFile").toString(),
+                   newpost.getProperty("creationDate"), newpost.getProperty("locationIP").toString(),
+                    newpost.getProperty("browerUsed").toString(), newpost.getProperty("language").toString(),
+                    newpost.getProperty("content").toString(), newpost.getProperty("length").toString());
+
+            ODocument newTag= new ODocument("Tag");
+            newTag.field("idTag", "22100");
+            newTag.field("name", "NewTag");
+
+            graphLoader.createTag(newTag.getProperty("idTag").toString(), newTag.getProperty("name").toString());
+
+
+            String queryPostNew = "SELECT * FROM Post WHERE idPost = ? LIMIT 20";
+            OResultSet rsPostnew = db.query(queryPostNew, newpost.getProperty("idPost").toString());
+            OVertex newpostVertex = rsPostnew.vertexStream().findFirst().get();
+
+            String queryTagNew = "SELECT * FROM Tag WHERE idTag = ? LIMIT 20";
+            OResultSet rsTagNew = db.query(queryTagNew, newTag.getProperty("idTag").toString());
+            OVertex newtagVertex = rsTagNew.vertexStream().findFirst().get();
+
+
+            String queryPost = "SELECT * FROM Post WHERE idPost = ? LIMIT 20";
+            OResultSet rsPost = db.query(queryPost, "687194767630");
+            post = rsPost.vertexStream().findFirst().get();
+
+            String queryTag = "SELECT * FROM Tag WHERE idTag = ? LIMIT 20";
+            OResultSet rsTag = db.query(queryTag, "3198");
+            tag = rsTag.vertexStream().findFirst().get();
+
+            graphLoader.updateHasTag(post, tag, newpostVertex, newtagVertex);
+
+            newtagVertex.delete().save();
+            newpostVertex.delete().save();
+
+
+             */
     }
 
 

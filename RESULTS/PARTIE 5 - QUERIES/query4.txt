@@ -1,0 +1,156 @@
+// MOKHTAR SAMY
+
+// EXPLICATION
+
+/*
+La première étape est de calculer la somme de TotalPrice de des Orders et on groupe par Customer/Person
+et on prend les 2 premiers après avoir fait ORDER BY
+
+On Traverse le graphe en sortant de l'Edge Knows et on parcours le graph en faisant
+Depth limited search avec un Depth maximum de longeur 3
+Pour les 2 customers trouvés au début
+
+On cherche l'intersection entre les 2 résultats
+
+On récupère ce résultat qui contient des références vers les amis en commun et on affiche leurs nom et prénom
+
+OrientDb a déjà une fonction Traverse() pour parcourir un Graph
+et intersect pour trouver les valeurs en commun entre 2 résultats
+*/
+
+// CODE :
+
+ public static void query4(ODatabaseSession db) {
+        /**
+         * Query 4. Find the top-2 persons who spend the highest amount of money in orders. Then for
+         each person, traverse her knows-graph with 3-hop to find the friends, and finally return the
+         common friends of these two persons.
+         * */
+        String query = "SELECT PersonId FROM (SELECT PersonId, SUM(TotalPrice) as amountSpent FROM Order GROUP BY PersonId ORDER BY amountSpent DESC LIMIT 2)";
+        OResultSet rs = db.query(query);
+        ArrayList<String> listCustomers = new ArrayList<>();
+        while (rs.hasNext()) {
+            listCustomers.add(rs.next().getProperty("PersonId").toString());
+        }
+        String sql = "SELECT intersect((TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ? ) MAXDEPTH 3)," +
+                "(TRAVERSE OUT(\"Knows\") FROM ( SELECT FROM Customer WHERE id = ?  ) MAXDEPTH 3))";
+
+        OResultSet result = db.query(sql, listCustomers.get(0), listCustomers.get(1));
+
+        ArrayList<String> customers = new ArrayList<>();
+        while(result.hasNext()) {
+            String customersOridsString = result.next().getProperty("intersect(($$$SUBQUERY$$_0), ($$$SUBQUERY$$_1))").toString();
+            customersOridsString = customersOridsString.replace("[", "");
+            customersOridsString = customersOridsString.replace("]", "");
+            String[] customersOrids  = customersOridsString.split(",");
+
+            System.out.println("People found in the interesction of the friends graph of 2 customers");
+            for(String orid : customersOrids)
+            {
+                String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+                OResultSet firstLastName = db.query(query5, orid);
+                System.out.println(firstLastName.stream().findFirst().get());
+            }
+        }
+    }
+
+/*****/
+Résultat
+La requête donne un résultat très long
+{
+firstName: Jun
+lastName: Zhang
+}
+
+{
+firstName: Takeshi
+lastName: Suzuki
+}
+
+{
+firstName: Marelize
+lastName: Maclean
+}
+
+{
+firstName: Lei
+lastName: Zhang
+}
+
+{
+firstName: Dame
+lastName: Faye
+}
+
+{
+firstName: Alejandro
+lastName: Sumac
+}
+
+{
+firstName: Anson
+lastName: Li
+}
+
+{
+firstName: Jie
+lastName: Zhao
+}
+
+{
+firstName: Keith
+lastName: Watson
+}
+
+{
+firstName: Imtiaz
+lastName: Ahmed
+}
+
+{
+firstName: Hans
+lastName: Becker
+}
+
+{
+firstName: Takeshi
+lastName: Yamamoto
+}
+
+{
+firstName: Chen
+lastName: Xu
+}
+
+{
+firstName: Imre
+lastName: Nagy
+}
+
+{
+firstName: Yang
+lastName: Wang
+}
+
+{
+firstName: Eddie
+lastName: Santos
+}
+
+{
+firstName: Carlos
+lastName: David
+}
+
+{
+firstName: Lei
+lastName: Wang
+}
+
+{
+firstName: Alexei
+lastName: Feltsman
+}
+
+.
+.

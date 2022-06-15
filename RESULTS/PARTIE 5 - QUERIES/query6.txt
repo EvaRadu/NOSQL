@@ -1,0 +1,115 @@
+// MOKHTAR SAMY
+
+// EXPLICATION :
+
+/*
+
+Premièrement on cherche le plus court chemin entre deux personnes données dans les arcs de la classe Knows.
+
+Après on prend le résultat et leur achats effectués dans Order, on compte la fréquence des produits
+dans leurs liste d'achats, et on prend les 3 produits avec le plus de fréquence.
+
+OrientDb a déjà une fonction shortestPath() pour calculer le plus court chemin
+
+*/
+
+// CODE :
+
+public static void query6(ODatabaseSession db, OVertex customer1, OVertex customer2) {
+    /**
+        Query 6. Given customer 1 and customer 2, find persons in the shortest path between them
+        in the subgraph, and return the TOP 3 best sellers from all these persons' purchases.
+    **/
+
+    String query = "SELECT shortestPath( ? , ? , \"OUT\", \"knows\") as sp";
+    OResultSet rs = db.query(query, customer1.getIdentity(), customer2.getIdentity());
+
+    String customersOridsString = rs.stream().findFirst().get().getProperty("sp").toString();
+
+    customersOridsString = customersOridsString.replace("[", "");
+    customersOridsString = customersOridsString.replace("]", "");
+    String[] customersOrids = customersOridsString.split(",");
+
+    List<String> listIDs = new ArrayList<>();
+    for (String orid : customersOrids) {
+        String query5 = "SELECT id FROM Customer WHERE @rid = ?";
+        OResultSet ids = db.query(query5, orid);
+        listIDs.add(ids.stream().findFirst().get().getProperty("id").toString());
+    }
+
+    String query2 = " SELECT OUT(\"Orderline\").asin as products FROM Order " +
+            "WHERE PersonId = ? OR PersonId = ? OR PersonId = ? OR PersonId = ? GROUP BY products";
+
+    OResultSet rs2 = db.query(query2, listIDs.get(0), listIDs.get(1), listIDs.get(2), listIDs.get(3));
+    List<String> listProducts = new ArrayList<>();
+
+    while (rs2.hasNext()){
+
+        String productsString = rs2.next().getProperty("products").toString();
+        productsString = productsString.replace("[", "");
+        productsString = productsString.replace("]", "");
+        String[] productsIds = productsString.split(",");
+        listProducts.add(productsIds[0]);
+    }
+
+    Map<String, Long> counts =
+            listProducts.stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
+
+
+    List ordered = counts.entrySet()
+            .stream()
+            .sorted(Map.Entry.comparingByValue()).toList();
+
+    System.out.println("Customers found in shortestPath");
+    for(String orid : customersOrids)
+    {
+        String query5 = "SELECT firstName, lastName FROM Customer WHERE @rid = ?";
+        OResultSet firstLastName = db.query(query5, orid);
+        System.out.println(firstLastName.stream().findFirst().get());
+    }
+
+    System.out.println("TOP 3 sales of the products bought by the above customers");
+    System.out.println(ordered.get(ordered.size()-1) + " / " +
+            ordered.get(ordered.size()-2) + " / " + ordered.get(ordered.size()-3));
+
+}
+
+
+/** Query 6 **/
+    OVertex customer1 = null;
+    OVertex customer2 = null;
+        String query = "SELECT * FROM Customer LIMIT 20";
+        OResultSet rs = db.query(query);
+        List<OVertex> customersList = rs.vertexStream().toList();
+        customer1 = customersList.get(0);
+        customer2 = customersList.get(7);
+        rs.close();
+
+Main.query6(db, customer1, customer2);
+    
+/*****/
+Résultat:
+
+Customers found in shortestPath
+{
+firstName: Albade
+lastName: Maazou
+}
+
+{
+firstName: Ali
+lastName: Abouba
+}
+
+{
+firstName: Bingbing
+lastName: Liu
+}
+
+{
+firstName: Carmen
+lastName: Lepland
+}
+
+TOP 3 sales of the products bought by the above customers
+B005AC1H6Y=3 / B007L4ZGXE=3 / B005VTPYOC=2
